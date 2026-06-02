@@ -62,13 +62,6 @@ export function currentMonthString() {
   return new Date().toISOString().slice(0, 7);
 }
 
-export function isInNextMonth(dateString, now = new Date()) {
-  if (!dateString) return false;
-  const date = new Date(`${dateString}T00:00:00`);
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  return date.getFullYear() === nextMonth.getFullYear() && date.getMonth() === nextMonth.getMonth();
-}
-
 export function sortByDateDesc(items) {
   return [...items].sort((a, b) => {
     const aDate = a.date || a.expectedDate || "";

@@ -2,9 +2,9 @@ import { data, saveData } from "./storage.js";
 import {
   $,
   createId,
+  currentMonthString,
   escapeHtml,
   formatCurrency,
-  isInNextMonth,
   requestView,
   requireDate,
   requireNumber,
@@ -14,6 +14,27 @@ import {
   sortByDateDesc,
   todayString
 } from "./utils.js";
+
+let expectedIncomeListMonth = currentMonthString();
+
+function addMonths(monthValue, amount) {
+  const [year, month] = String(monthValue || currentMonthString()).split("-").map(Number);
+  const date = new Date(year, month - 1 + amount, 1);
+  const nextYear = date.getFullYear();
+  const nextMonth = String(date.getMonth() + 1).padStart(2, "0");
+  return `${nextYear}-${nextMonth}`;
+}
+
+export function getVisibleExpectedIncomes() {
+  const currentMonth = expectedIncomeListMonth || currentMonthString();
+  const nextMonth = addMonths(currentMonth, 1);
+  return sortByDateDesc(
+    data.expectedIncomes.filter((income) => {
+      const month = String(income.expectedDate || "").slice(0, 7);
+      return month === currentMonth || month === nextMonth;
+    })
+  );
+}
 
 export function createExpectedIncome(input) {
   const expectedIncome = {
@@ -42,37 +63,42 @@ export function updateExpectedIncome(incomeId, input) {
   return income;
 }
 
-export function getNextMonthExpectedIncomeSummary() {
-  const nextMonthItems = data.expectedIncomes.filter((income) => isInNextMonth(income.expectedDate));
-  const total = nextMonthItems.reduce((sum, income) => sum + income.amount, 0);
-  const received = nextMonthItems.filter((income) => income.received).reduce((sum, income) => sum + income.amount, 0);
+export function getExpectedIncomeSummary() {
+  const total = data.expectedIncomes.reduce((sum, income) => sum + income.amount, 0);
+  const received = data.expectedIncomes.filter((income) => income.received).reduce((sum, income) => sum + income.amount, 0);
   return {
     total,
     received,
     pending: total - received,
-    count: nextMonthItems.length
+    count: data.expectedIncomes.length
   };
 }
 
 export function renderExpectedIncomePage() {
-  const summary = getNextMonthExpectedIncomeSummary();
-  const incomes = sortByDateDesc(data.expectedIncomes);
+  const summary = getExpectedIncomeSummary();
+  const incomes = getVisibleExpectedIncomes();
+  document.body.dataset.expectedIncomeMode = "list";
 
   setHtml(
     "#expectedIncomePage",
     `
       <div class="panel">
-        <h2 id="expectedIncomeTitle">下個月預期入帳</h2>
+        <h2 id="expectedIncomeTitle">預期入帳</h2>
         <div class="metric-grid">
           <div class="metric"><span>預期總額</span><strong>${formatCurrency(summary.total)}</strong></div>
           <div class="metric"><span>尚未入帳</span><strong>${formatCurrency(summary.pending)}</strong></div>
           <div class="metric"><span>已入帳</span><strong>${formatCurrency(summary.received)}</strong></div>
           <div class="metric"><span>筆數</span><strong>${summary.count}</strong></div>
         </div>
+        <button class="fab-button expected-income-fab" id="addExpectedIncomeButton" type="button" aria-label="新增預期入帳">+</button>
       </div>
-      <div class="section-heading"><h2>新增預期入帳</h2></div>
-      ${renderForm()}
-      <div class="section-heading"><h2>清單</h2></div>
+      <div class="record-toolbar">
+        <label>
+          清單月份
+          <input id="expectedIncomeMonthFilter" type="month" value="${expectedIncomeListMonth}" />
+        </label>
+        <h2>清單</h2>
+      </div>
       ${renderList(incomes)}
     `
   );
@@ -80,62 +106,86 @@ export function renderExpectedIncomePage() {
   bindExpectedIncomeEvents();
   requestView("expected-income", {
     title: "預期入帳",
-    subtitle: "管理下個月會進來的錢",
+    subtitle: "管理預計會進來的錢",
     showBack: true
   });
 }
 
-function renderForm() {
+function renderExpectedIncomeFormPage(incomeId = "") {
+  const income = incomeId ? data.expectedIncomes.find((item) => item.id === incomeId) : null;
+  document.body.dataset.expectedIncomeMode = "form";
+  setHtml(
+    "#expectedIncomePage",
+    `
+      <div class="panel">
+        <h2>${income ? "修改預期入帳" : "新增預期入帳"}</h2>
+        ${renderForm(income)}
+      </div>
+    `
+  );
+  bindExpectedIncomeEvents();
+  requestView("expected-income", {
+    title: income ? "修改預期入帳" : "新增預期入帳",
+    subtitle: "管理預計會入帳的金額",
+    showBack: true
+  });
+}
+
+function renderForm(income = null) {
   return `
-    <form id="expectedIncomeForm" class="panel form-stack">
-      <input id="expectedIncomeId" type="hidden" />
+    <form id="expectedIncomeForm" class="form-stack">
+      <input id="expectedIncomeId" type="hidden" value="${income ? escapeHtml(income.id) : ""}" />
       <label>
         名稱
-        <input id="expectedIncomeName" type="text" autocomplete="off" required />
+        <input id="expectedIncomeName" type="text" autocomplete="off" value="${income ? escapeHtml(income.name) : ""}" required />
       </label>
       <label>
         金額
-        <input id="expectedIncomeAmount" type="number" inputmode="decimal" step="1" required />
+        <input id="expectedIncomeAmount" type="number" inputmode="decimal" step="1" value="${income ? income.amount : ""}" required />
       </label>
       <label>
         預期日期
-        <input id="expectedIncomeDate" type="date" value="${todayString()}" required />
+        <input id="expectedIncomeDate" type="date" value="${income ? escapeHtml(income.expectedDate) : todayString()}" required />
       </label>
       <label>
         <span>是否已入帳</span>
-        <input id="expectedIncomeReceived" type="checkbox" />
+        <input id="expectedIncomeReceived" type="checkbox" ${income?.received ? "checked" : ""} />
       </label>
       <label>
         備註
-        <textarea id="expectedIncomeNote" rows="3"></textarea>
+        <textarea id="expectedIncomeNote" rows="3">${income ? escapeHtml(income.note || "") : ""}</textarea>
       </label>
-      <button class="primary-button" type="submit">新增</button>
-      <button class="danger-button is-hidden" id="deleteExpectedIncomeButton" type="button">刪除這筆預期入帳</button>
+      <div class="button-row">
+        <button class="secondary-button" id="cancelExpectedIncomeButton" type="button">取消</button>
+        <button class="primary-button" type="submit">${income ? "更新" : "新增"}</button>
+      </div>
+      <button class="danger-button ${income ? "" : "is-hidden"}" id="deleteExpectedIncomeButton" type="button">刪除這筆預期入帳</button>
     </form>
   `;
 }
 
 function renderList(incomes) {
-  if (!incomes.length) return `<div class="empty-state">還沒有預期入帳</div>`;
+  if (!incomes.length) return `<div class="empty-state">這兩個月份還沒有預期入帳</div>`;
 
   return `
     <div class="list-stack">
       ${incomes
         .map(
           (income) => `
-            <article class="list-card interactive-card" data-edit-income="${income.id}" role="button" tabindex="0">
+            <article class="list-card interactive-card expected-income-card" data-edit-income="${income.id}" role="button" tabindex="0">
               <div class="item-row">
                 <div>
                   <div class="item-title">${escapeHtml(income.name)}</div>
-                  <div class="item-meta">${escapeHtml(income.expectedDate)}${income.note ? ` · ${escapeHtml(income.note)}` : ""}</div>
+                  <div class="item-meta">${escapeHtml(income.expectedDate)}</div>
                 </div>
                 <div>
                   <strong>${formatCurrency(income.amount)}</strong>
                   <div class="item-meta">${income.received ? "已入帳" : "未入帳"}</div>
                 </div>
               </div>
-              <div class="button-row" style="margin-top: 12px">
-                <button class="secondary-button" type="button" data-toggle-income="${income.id}">${income.received ? "改為未入帳" : "標記已入帳"}</button>
+              ${income.note ? `<p class="expected-income-note">${escapeHtml(income.note)}</p>` : ""}
+              <div class="record-actions expected-income-actions">
+                <button class="secondary-button compact-toggle-button" type="button" data-toggle-income="${income.id}">${income.received ? "改為未入帳" : "標記已入帳"}</button>
               </div>
             </article>
           `
@@ -146,6 +196,19 @@ function renderList(incomes) {
 }
 
 function bindExpectedIncomeEvents() {
+  $("#expectedIncomeMonthFilter")?.addEventListener("change", (event) => {
+    expectedIncomeListMonth = event.target.value || currentMonthString();
+    renderExpectedIncomePage();
+  });
+
+  $("#addExpectedIncomeButton")?.addEventListener("click", () => {
+    renderExpectedIncomeFormPage();
+  });
+
+  $("#cancelExpectedIncomeButton")?.addEventListener("click", () => {
+    renderExpectedIncomePage();
+  });
+
   $("#expectedIncomeForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
     try {
@@ -159,6 +222,7 @@ function bindExpectedIncomeEvents() {
       };
       if (incomeId) updateExpectedIncome(incomeId, input);
       else createExpectedIncome(input);
+      expectedIncomeListMonth = String(input.expectedDate).slice(0, 7) || currentMonthString();
       renderExpectedIncomePage();
     } catch (error) {
       showError(error);
@@ -176,18 +240,7 @@ function bindExpectedIncomeEvents() {
   });
 
   document.querySelectorAll("[data-edit-income]").forEach((button) => {
-    const open = () => {
-      const income = data.expectedIncomes.find((item) => item.id === button.dataset.editIncome);
-      if (!income) return;
-      $("#expectedIncomeId").value = income.id;
-      $("#expectedIncomeName").value = income.name;
-      $("#expectedIncomeAmount").value = income.amount;
-      $("#expectedIncomeDate").value = income.expectedDate;
-      $("#expectedIncomeReceived").checked = income.received;
-      $("#expectedIncomeNote").value = income.note || "";
-      $("#expectedIncomeForm button[type='submit']").textContent = "更新";
-      $("#deleteExpectedIncomeButton").classList.remove("is-hidden");
-    };
+    const open = () => renderExpectedIncomeFormPage(button.dataset.editIncome);
     button.addEventListener("click", open);
     button.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") open();

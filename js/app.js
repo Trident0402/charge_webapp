@@ -1,5 +1,5 @@
 import { getAccountDisplayValue, getCashAccountTotal, renderAccountDetail, bindAccountForm } from "./accounts.js";
-import { renderExpectedIncomePage, getNextMonthExpectedIncomeSummary } from "./expected-income.js";
+import { renderExpectedIncomePage, getExpectedIncomeSummary } from "./expected-income.js";
 import { renderSettingsPage } from "./settings.js";
 import { getAllStockMarketValue } from "./stocks.js";
 import { bindStockForms } from "./stocks.js";
@@ -37,7 +37,7 @@ function renderHome() {
   window.currentAccountId = null;
   const cashTotal = getCashAccountTotal();
   const stockTotal = getAllStockMarketValue();
-  const expected = getNextMonthExpectedIncomeSummary();
+  const expected = getExpectedIncomeSummary();
   const hideAmounts = Boolean(data.settings.hideAssetAmounts);
   const money = (value) => (hideAmounts ? "***" : formatCurrency(value));
 
@@ -57,7 +57,7 @@ function renderHome() {
         <div class="home-metric-grid">
           <div class="mini-metric"><span>現金類</span><strong>${money(cashTotal)}</strong></div>
           <div class="mini-metric"><span>股票市值</span><strong>${money(stockTotal)}</strong></div>
-          <div class="mini-metric"><span>下月預期</span><strong>${money(expected.total)}</strong></div>
+          <div class="mini-metric"><span>預期入帳總額</span><strong>${money(expected.total)}</strong></div>
           <div class="mini-metric"><span>尚未入帳</span><strong>${money(expected.pending)}</strong></div>
         </div>
       </div>
@@ -124,6 +124,10 @@ function bindGlobalEvents() {
   });
 
   $("#backButton")?.addEventListener("click", () => {
+    if (currentView === "expected-income" && document.body.dataset.expectedIncomeMode === "form") {
+      renderExpectedIncomePage();
+      return;
+    }
     if (window.currentAccountId && currentView !== "account-detail") {
       renderAccountDetail(window.currentAccountId);
       return;
