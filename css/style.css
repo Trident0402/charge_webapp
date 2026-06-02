@@ -72,7 +72,7 @@ p {
 
 .app-shell {
   min-height: 100vh;
-  padding-bottom: calc(76px + var(--safe-bottom));
+  padding-bottom: calc(70px + var(--safe-bottom));
 }
 
 .app-header {
@@ -82,8 +82,8 @@ p {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 72px;
-  padding: 14px 18px;
+  min-height: 62px;
+  padding: 10px 16px;
   background: rgba(245, 247, 248, 0.92);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line);
@@ -94,20 +94,20 @@ p {
 }
 
 .app-title-block h1 {
-  font-size: 21px;
+  font-size: 19px;
   line-height: 1.2;
 }
 
 .app-title-block p {
-  margin-top: 3px;
+  margin-top: 2px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .app-main {
   width: min(100%, 820px);
   margin: 0 auto;
-  padding: 16px;
+  padding: 12px;
 }
 
 .view {
@@ -123,11 +123,11 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: 20px 0 12px;
+  margin: 16px 0 10px;
 }
 
 .section-heading h2 {
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .bottom-nav {
@@ -139,14 +139,14 @@ p {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  padding: 10px 14px calc(10px + var(--safe-bottom));
+  padding: 8px 12px calc(8px + var(--safe-bottom));
   background: rgba(255, 255, 255, 0.94);
   border-top: 1px solid var(--line);
   backdrop-filter: blur(16px);
 }
 
 .bottom-nav button {
-  min-height: 44px;
+  min-height: 42px;
   border: 0;
   border-radius: var(--radius);
   background: transparent;
@@ -162,7 +162,7 @@ p {
 
 .panel,
 .summary-card,
-.account-folder,
+.account-card,
 .list-card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -171,12 +171,12 @@ p {
 }
 
 .panel {
-  padding: 16px;
+  padding: 14px;
 }
 
 .panel h2 {
-  margin-bottom: 14px;
-  font-size: 20px;
+  margin-bottom: 12px;
+  font-size: 19px;
 }
 
 .primary-button,
@@ -226,13 +226,34 @@ p {
   flex: 1;
 }
 
+.compact-actions,
+.record-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.compact-actions button,
+.record-actions button {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.record-actions {
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
 .action-grid,
 .metric-grid,
+.home-metric-grid,
+.stock-summary-grid,
 .form-grid,
 .stock-mini-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .form-stack {
@@ -267,7 +288,7 @@ textarea {
 }
 
 .metric {
-  padding: 13px;
+  padding: 10px;
   background: var(--surface-soft);
   border-radius: var(--radius);
 }
@@ -275,104 +296,254 @@ textarea {
 .metric span {
   display: block;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
 }
 
 .metric strong {
   display: block;
-  margin-top: 6px;
-  font-size: 18px;
+  margin-top: 4px;
+  font-size: 16px;
   overflow-wrap: anywhere;
 }
 
-.home-hero {
+.mini-metric {
+  min-width: 0;
+  padding: 8px 9px;
+  background: var(--surface-soft);
+  border-radius: var(--radius);
+}
+
+.mini-metric span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.mini-metric strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 14px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.home-summary-card {
   display: grid;
-  gap: 12px;
-  padding: 18px;
+  gap: 10px;
+  padding: 14px;
   background: var(--primary);
   color: white;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
 
-.home-hero span {
-  font-size: 13px;
+.home-total-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-total-row > div {
+  min-width: 0;
+}
+
+.home-summary-card .home-total-row span {
+  font-size: 12px;
   opacity: 0.86;
 }
 
-.home-hero strong {
+.home-summary-card .home-total-row strong {
   display: block;
-  margin-top: 4px;
-  font-size: 34px;
+  margin-top: 3px;
+  font-size: 27px;
   line-height: 1.1;
   overflow-wrap: anywhere;
 }
 
-.home-hero .metric {
+.visibility-button {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.eye-icon {
+  position: relative;
+  display: block;
+  width: 20px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-radius: 999px / 70%;
+}
+
+.eye-icon::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.eye-icon.is-closed::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -3px;
+  width: 26px;
+  height: 2px;
+  background: currentColor;
+  transform: rotate(-32deg);
+}
+
+.home-summary-card .mini-metric {
   background: rgba(255, 255, 255, 0.12);
 }
 
-.home-hero .metric span {
+.home-summary-card .mini-metric span {
   color: rgba(255, 255, 255, 0.82);
 }
 
-.home-hero .metric strong {
-  font-size: 17px;
+.home-summary-card .mini-metric strong {
+  color: white;
 }
 
-.account-folder-grid {
+.account-card-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
-.account-folder {
+.account-card {
   display: grid;
-  gap: 12px;
-  min-height: 148px;
-  padding: 14px;
+  gap: 8px;
+  min-height: 118px;
+  padding: 12px;
   text-align: left;
   color: var(--text);
 }
 
-.account-folder-icon {
+.account-card-icon {
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 38px;
+  width: 40px;
+  height: 32px;
   border-radius: 7px;
   background: var(--accent);
   color: #533f09;
-  font-size: 22px;
+  font-size: 18px;
 }
 
-.account-folder h3,
+.account-card h3,
 .account-detail-title h2 {
   overflow-wrap: anywhere;
 }
 
-.account-folder h3 {
-  font-size: 16px;
+.account-card h3 {
+  font-size: 15px;
 }
 
-.account-folder p,
+.account-card p,
 .item-meta {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 
-.account-folder strong {
+.account-card strong {
   display: block;
   margin-top: auto;
-  font-size: 18px;
+  font-size: 16px;
   overflow-wrap: anywhere;
 }
 
 .account-detail-header {
+  position: relative;
   display: grid;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.fab-button {
+  position: fixed;
+  right: 18px;
+  bottom: calc(82px + var(--safe-bottom));
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 12px 24px rgba(31, 118, 103, 0.32);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.action-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: none;
+}
+
+.action-sheet.is-open {
+  display: block;
+}
+
+.action-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: rgba(10, 20, 18, 0.35);
+}
+
+.action-sheet-panel {
+  position: absolute;
+  right: 12px;
+  bottom: calc(78px + var(--safe-bottom));
+  left: 12px;
+  display: grid;
+  gap: 8px;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 18px 42px rgba(17, 33, 31, 0.22);
+}
+
+.action-sheet-panel h3 {
+  padding: 2px 4px 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.action-sheet-item {
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  color: var(--text);
+  font-weight: 800;
+  text-align: center;
 }
 
 .account-detail-title,
@@ -384,7 +555,7 @@ textarea {
 }
 
 .account-detail-title h2 {
-  font-size: 22px;
+  font-size: 20px;
 }
 
 .account-type-pill,
@@ -401,6 +572,29 @@ textarea {
   white-space: nowrap;
 }
 
+.record-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0 10px;
+}
+
+.record-toolbar label {
+  width: min(48%, 180px);
+}
+
+.record-toolbar input {
+  min-height: 40px;
+  padding: 7px 9px;
+  font-size: 15px;
+}
+
+.record-toolbar h2 {
+  font-size: 17px;
+  white-space: nowrap;
+}
+
 .list-stack,
 .settings-actions {
   display: grid;
@@ -408,7 +602,21 @@ textarea {
 }
 
 .list-card {
-  padding: 13px;
+  padding: 11px;
+}
+
+.interactive-card {
+  cursor: pointer;
+  transition: border-color 0.16s ease, transform 0.16s ease;
+}
+
+.interactive-card:active {
+  transform: scale(0.99);
+}
+
+.interactive-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .item-title {
@@ -429,7 +637,7 @@ textarea {
 }
 
 .empty-state {
-  padding: 20px;
+  padding: 16px;
   color: var(--muted);
   text-align: center;
   background: var(--surface);
@@ -437,9 +645,59 @@ textarea {
   border-radius: var(--radius);
 }
 
-.stock-holding {
+.stock-holding-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.stock-holding-card summary {
   display: grid;
-  gap: 10px;
+  gap: 6px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.stock-holding-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.holding-summary-top,
+.holding-summary-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.holding-summary-top strong,
+.holding-summary-bottom strong {
+  white-space: nowrap;
+}
+
+.holding-summary-top strong:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.holding-summary-top span,
+.holding-summary-bottom span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.holding-summary-bottom {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.holding-expanded-grid {
+  padding: 0 10px 10px;
 }
 
 .stock-symbol {
@@ -449,7 +707,7 @@ textarea {
 }
 
 .stock-mini-grid div {
-  padding: 10px;
+  padding: 8px;
   border-radius: var(--radius);
   background: var(--surface-soft);
 }
@@ -472,16 +730,22 @@ textarea {
 }
 
 @media (min-width: 720px) {
-  .account-folder-grid {
+  .account-card-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 430px) {
   .form-grid,
-  .action-grid,
-  .metric-grid,
   .stock-mini-grid {
     grid-template-columns: 1fr;
+  }
+
+  .record-toolbar {
+    align-items: end;
+  }
+
+  .record-toolbar label {
+    width: 160px;
   }
 }
