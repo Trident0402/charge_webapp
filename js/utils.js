@@ -17,7 +17,9 @@ export const ACCOUNT_ICONS = {
 export const TRANSACTION_TYPES = {
   income: "收入",
   expense: "支出",
-  adjustment: "調整"
+  adjustment: "調整",
+  "transfer-in": "轉入",
+  "transfer-out": "轉出"
 };
 
 export const STOCK_TRADE_TYPES = {
@@ -54,6 +56,10 @@ export function createId(prefix) {
 
 export function todayString() {
   return new Date().toISOString().slice(0, 10);
+}
+
+export function currentMonthString() {
+  return new Date().toISOString().slice(0, 7);
 }
 
 export function isInNextMonth(dateString, now = new Date()) {

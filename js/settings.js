@@ -1,4 +1,4 @@
-import { clearData, data, replaceData } from "./storage.js";
+import { addMissingBaseAccounts, clearData, data, replaceData } from "./storage.js";
 import { $, requestHome, requestView, setHtml, showError } from "./utils.js";
 
 export function renderSettingsPage() {
@@ -8,6 +8,7 @@ export function renderSettingsPage() {
       <div class="panel">
         <h2 id="settingsTitle">設定與備份</h2>
         <div class="settings-actions">
+          <button class="secondary-button" id="addBaseAccountsButton" type="button">新增基礎帳戶</button>
           <button class="primary-button" id="exportBackupButton" type="button">匯出 JSON 備份</button>
           <label>
             匯入 JSON 備份
@@ -37,6 +38,12 @@ export function renderSettingsPage() {
 }
 
 function bindSettingsEvents() {
+  $("#addBaseAccountsButton")?.addEventListener("click", () => {
+    const result = addMissingBaseAccounts();
+    alert(result.added ? `已新增 ${result.added} 個基礎帳戶，略過 ${result.skipped} 個已存在帳戶。` : "五個基礎帳戶都已存在，不需新增。");
+    renderSettingsPage();
+  });
+
   $("#exportBackupButton")?.addEventListener("click", exportBackup);
 
   $("#importBackupInput")?.addEventListener("change", async (event) => {

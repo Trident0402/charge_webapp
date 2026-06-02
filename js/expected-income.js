@@ -30,6 +30,18 @@ export function createExpectedIncome(input) {
   return expectedIncome;
 }
 
+export function updateExpectedIncome(incomeId, input) {
+  const income = data.expectedIncomes.find((item) => item.id === incomeId);
+  if (!income) return null;
+  income.name = input.name;
+  income.amount = Number(input.amount) || 0;
+  income.expectedDate = input.expectedDate;
+  income.received = Boolean(input.received);
+  income.note = input.note || "";
+  saveData();
+  return income;
+}
+
 export function getNextMonthExpectedIncomeSummary() {
   const nextMonthItems = data.expectedIncomes.filter((income) => isInNextMonth(income.expectedDate));
   const total = nextMonthItems.reduce((sum, income) => sum + income.amount, 0);
@@ -76,6 +88,7 @@ export function renderExpectedIncomePage() {
 function renderForm() {
   return `
     <form id="expectedIncomeForm" class="panel form-stack">
+      <input id="expectedIncomeId" type="hidden" />
       <label>
         名稱
         <input id="expectedIncomeName" type="text" autocomplete="off" required />
@@ -97,6 +110,7 @@ function renderForm() {
         <textarea id="expectedIncomeNote" rows="3"></textarea>
       </label>
       <button class="primary-button" type="submit">新增</button>
+      <button class="danger-button is-hidden" id="deleteExpectedIncomeButton" type="button">刪除這筆預期入帳</button>
     </form>
   `;
 }
@@ -109,7 +123,7 @@ function renderList(incomes) {
       ${incomes
         .map(
           (income) => `
-            <article class="list-card">
+            <article class="list-card interactive-card" data-edit-income="${income.id}" role="button" tabindex="0">
               <div class="item-row">
                 <div>
                   <div class="item-title">${escapeHtml(income.name)}</div>
@@ -122,7 +136,6 @@ function renderList(incomes) {
               </div>
               <div class="button-row" style="margin-top: 12px">
                 <button class="secondary-button" type="button" data-toggle-income="${income.id}">${income.received ? "改為未入帳" : "標記已入帳"}</button>
-                <button class="danger-button" type="button" data-delete-income="${income.id}">刪除</button>
               </div>
             </article>
           `
@@ -136,13 +149,16 @@ function bindExpectedIncomeEvents() {
   $("#expectedIncomeForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
     try {
-      createExpectedIncome({
+      const incomeId = $("#expectedIncomeId").value;
+      const input = {
         name: requireText($("#expectedIncomeName").value, "名稱"),
         amount: requireNumber($("#expectedIncomeAmount").value, "金額", { positive: true }),
         expectedDate: requireDate($("#expectedIncomeDate").value, "預期日期"),
         received: $("#expectedIncomeReceived").checked,
         note: $("#expectedIncomeNote").value.trim()
-      });
+      };
+      if (incomeId) updateExpectedIncome(incomeId, input);
+      else createExpectedIncome(input);
       renderExpectedIncomePage();
     } catch (error) {
       showError(error);
@@ -150,7 +166,8 @@ function bindExpectedIncomeEvents() {
   });
 
   document.querySelectorAll("[data-toggle-income]").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
       const income = data.expectedIncomes.find((item) => item.id === button.dataset.toggleIncome);
       if (income) income.received = !income.received;
       saveData();
@@ -158,12 +175,31 @@ function bindExpectedIncomeEvents() {
     });
   });
 
-  document.querySelectorAll("[data-delete-income]").forEach((button) => {
-    button.addEventListener("click", () => {
-      if (!confirm("確定要刪除這筆預期入帳？")) return;
-      data.expectedIncomes = data.expectedIncomes.filter((income) => income.id !== button.dataset.deleteIncome);
-      saveData();
-      renderExpectedIncomePage();
+  document.querySelectorAll("[data-edit-income]").forEach((button) => {
+    const open = () => {
+      const income = data.expectedIncomes.find((item) => item.id === button.dataset.editIncome);
+      if (!income) return;
+      $("#expectedIncomeId").value = income.id;
+      $("#expectedIncomeName").value = income.name;
+      $("#expectedIncomeAmount").value = income.amount;
+      $("#expectedIncomeDate").value = income.expectedDate;
+      $("#expectedIncomeReceived").checked = income.received;
+      $("#expectedIncomeNote").value = income.note || "";
+      $("#expectedIncomeForm button[type='submit']").textContent = "更新";
+      $("#deleteExpectedIncomeButton").classList.remove("is-hidden");
+    };
+    button.addEventListener("click", open);
+    button.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") open();
     });
+  });
+
+  $("#deleteExpectedIncomeButton")?.addEventListener("click", () => {
+    const incomeId = $("#expectedIncomeId").value;
+    if (!incomeId) return;
+    if (!confirm("確定要刪除這筆預期入帳？")) return;
+    data.expectedIncomes = data.expectedIncomes.filter((income) => income.id !== incomeId);
+    saveData();
+    renderExpectedIncomePage();
   });
 }

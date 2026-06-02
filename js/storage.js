@@ -1,18 +1,81 @@
 const STORAGE_KEY = "chargeAppData";
 const DATA_VERSION = 1;
 
+const BASE_ACCOUNT_DEFINITIONS = [
+  {
+    id: "account_default_esun_bank",
+    name: "玉山銀行",
+    type: "bank"
+  },
+  {
+    id: "account_default_fubon_bank",
+    name: "富邦銀行",
+    type: "bank"
+  },
+  {
+    id: "account_default_linepay",
+    name: "Line pay money",
+    type: "linepay"
+  },
+  {
+    id: "account_default_cash",
+    name: "現金",
+    type: "wallet"
+  },
+  {
+    id: "account_default_fubon_stock",
+    name: "富邦證卷",
+    type: "stock"
+  }
+];
+
 export let data = createDefaultData();
+
+function normalizeAccountName(name) {
+  return String(name || "").trim().toLowerCase();
+}
+
+export function createDefaultAccounts() {
+  const now = new Date().toISOString();
+  return BASE_ACCOUNT_DEFINITIONS.map((account) => ({
+      ...account,
+      initialBalance: 0,
+      note: "",
+      createdAt: now,
+      updatedAt: now
+    }));
+}
+
+export function addMissingBaseAccounts() {
+  const existingIds = new Set(data.accounts.map((account) => account.id));
+  const existingNames = new Set(data.accounts.map((account) => normalizeAccountName(account.name)).filter(Boolean));
+  const accountsToAdd = createDefaultAccounts().filter((account) => {
+    return !existingIds.has(account.id) && !existingNames.has(normalizeAccountName(account.name));
+  });
+
+  if (accountsToAdd.length) {
+    data.accounts.push(...accountsToAdd);
+    saveData();
+  }
+
+  return {
+    added: accountsToAdd.length,
+    skipped: BASE_ACCOUNT_DEFINITIONS.length - accountsToAdd.length,
+    accounts: accountsToAdd
+  };
+}
 
 export function createDefaultData() {
   return {
     version: DATA_VERSION,
-    accounts: [],
+    accounts: createDefaultAccounts(),
     transactions: [],
     stockTrades: [],
     stockPrices: [],
     expectedIncomes: [],
     settings: {
-      currency: "TWD"
+      currency: "TWD",
+      hideAssetAmounts: false
     }
   };
 }
