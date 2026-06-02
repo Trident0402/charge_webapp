@@ -99,8 +99,9 @@
               </label>
               <label>
                 分類
-                <input id="transactionCategory" name="category" type="text" autocomplete="off" placeholder="薪資、飲食、交通..." />
+                <input id="transactionCategory" name="category" type="text" autocomplete="off" list="transactionCategoryList" placeholder="選擇或輸入分類 tag" />
               </label>
+              <datalist id="transactionCategoryList"></datalist>
               <label>
                 備註
                 <textarea id="transactionNote" name="note" rows="3"></textarea>
@@ -238,6 +239,10 @@
           <div id="expectedIncomePage"></div>
         </section>
 
+        <section class="view" id="view-monthly-report" aria-labelledby="monthlyReportTitle">
+          <div id="monthlyReportPage"></div>
+        </section>
+
         <section class="view" id="view-settings" aria-labelledby="settingsTitle">
           <div id="settingsPage"></div>
         </section>
@@ -246,6 +251,7 @@
       <nav class="bottom-nav" aria-label="主要導覽">
         <button type="button" data-nav="home">首頁</button>
         <button type="button" data-nav="expected-income">預期入帳</button>
+        <button type="button" data-nav="monthly-report">月報表</button>
         <button type="button" data-nav="settings">設定</button>
       </nav>
     </div>

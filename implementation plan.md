@@ -269,6 +269,7 @@ chargeAppData
   version: 1,
   accounts: [],
   transactions: [],
+  transactionCategories: [],
   stockTrades: [],
   stockPrices: [],
   expectedIncomes: [],
@@ -667,3 +668,58 @@ http://127.0.0.1:8000
 - 新增或修改預期入帳後，若該筆日期不在目前清單範圍，清單月份切換到該筆資料月份。
 - 預期入帳清單卡片中直接顯示備註文字。
 - 每張卡片的「標記已入帳 / 改為未入帳」按鈕縮小並放在方框右下角，避免佔用整行。
+
+### 12.11 收支分類 Tag
+
+- 收入 / 支出表單的「分類」欄位改成 tag 輸入。
+- 基礎分類 tag 包含：
+  - 薪資
+  - 早餐
+  - 午餐
+  - 晚餐
+  - 飲料
+  - 房租
+  - 電費
+  - 電話費
+  - 旅遊
+  - 生活必需品
+  - 健康
+  - 串流服務
+- 使用者可以直接輸入自己的分類 tag。
+- 自訂分類會存入 `transactionCategories`，不只依賴現有交易紀錄反推。
+- 之後即使相關收支紀錄被刪除，自訂分類仍保留在建議清單中。
+- 收支清單中若該筆有分類，使用小型 tag 樣式顯示。
+
+### 12.12 月帳務報表
+
+- 底部導覽列在「預期入帳」與「設定」中間新增「月報表」。
+- 新增 `js/monthly-report.js`，負責月帳務報表的統計、日期範圍、圖表與明細渲染。
+- 月報表支援：
+  - 支出 / 收入切換
+  - 月 / 半年 / 年 / 自訂期間
+  - 上一期 / 下一期切換
+  - 分類環形圖
+  - 分類百分比摘要
+  - 分類明細清單
+- 報表只統計 `income` 與 `expense`，不統計轉帳與舊調整紀錄。
+- 若交易沒有分類，歸入「未分類」。
+- 月報表上方「支出 / 收入」與「月 / 半年 / 年 / 自訂」切換區底色使用與報表區一致的淺綠色系。
+
+### 12.13 首頁帳戶圖示圖片化
+
+- 首頁「資產帳戶」卡片不再使用 emoji 作為主要圖示。
+- 使用使用者放在專案根目錄的 PNG 圖檔，不由系統自行生成圖示。
+- 將根目錄圖檔複製到 `assets/` 中作為 App 實際引用路徑：
+  - `bank.png` -> `assets/bank.png`
+  - `Stock.png` -> `assets/stock.png`
+  - `cash.png` -> `assets/cash.png`
+  - `line.png` -> `assets/line.png`
+- 依帳戶類型改用 `assets/` 中的 PNG 圖示：
+  - 銀行帳戶：`assets/bank.png`
+  - 股票帳戶：`assets/stock.png`
+  - 錢包：`assets/cash.png`
+  - Line Pay Money：`assets/line.png`
+- `js/utils.js` 的帳戶圖示對應改成圖片路徑。
+- `js/app.js` 的首頁帳戶卡片改成輸出 `<img>` 圖示。
+- `css/style.css` 補上圖片圖示尺寸與對齊樣式。
+- `service-worker.js` 將四個 PNG 圖示加入快取清單，確保 PWA 離線也能顯示。
