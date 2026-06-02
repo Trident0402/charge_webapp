@@ -137,7 +137,7 @@ p {
   left: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   padding: 8px 12px calc(8px + var(--safe-bottom));
   background: rgba(255, 255, 255, 0.94);
@@ -151,7 +151,7 @@ p {
   border-radius: var(--radius);
   background: transparent;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .bottom-nav button.is-active {
@@ -440,10 +440,12 @@ textarea {
   place-items: center;
   width: 40px;
   height: 32px;
-  border-radius: 7px;
-  background: var(--accent);
-  color: #533f09;
-  font-size: 18px;
+}
+
+.account-card-icon img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
 }
 
 .account-card h3,
@@ -623,6 +625,21 @@ textarea {
   font-weight: 800;
 }
 
+.category-tag {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 24px;
+  margin-top: 7px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--primary-dark);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .transaction-amount {
   flex: 0 0 auto;
   font-weight: 900;
@@ -752,6 +769,208 @@ textarea {
   padding: 12px;
 }
 
+.monthly-report-page {
+  display: grid;
+  gap: 18px;
+}
+
+.report-segment {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  width: min(100%, 390px);
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  padding: 3px;
+}
+
+.report-segment button,
+.report-period-grid button {
+  min-height: 46px;
+  border: 0;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.report-segment button.is-active,
+.report-period-grid button.is-active {
+  background: var(--surface);
+  color: var(--primary-dark);
+  box-shadow: 0 4px 12px rgba(31, 118, 103, 0.12);
+}
+
+.report-range-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.report-range-row strong {
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
+.report-arrow-button {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.report-period-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.report-period-grid button {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+
+.report-custom-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.report-chart-wrap {
+  display: grid;
+  place-items: center;
+  padding: 22px 0 10px;
+}
+
+.report-donut {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(66vw, 300px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--report-chart);
+}
+
+.report-donut::before {
+  content: "";
+  position: absolute;
+  inset: 26%;
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.report-donut-center {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 4px;
+  text-align: center;
+}
+
+.report-donut-center span {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.report-donut-center strong {
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.report-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 18px;
+  padding: 14px;
+}
+
+.report-legend-item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.report-color-square {
+  width: 24px;
+  height: 24px;
+}
+
+.report-legend-item strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-legend-item span:last-child {
+  font-weight: 900;
+}
+
+.report-detail-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.report-detail-title {
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.report-detail-title h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.report-detail-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.report-detail-row:last-child {
+  border-bottom: 0;
+}
+
+.report-category-dot {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: white;
+  font-weight: 900;
+}
+
+.report-detail-row > span:nth-child(2) {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-detail-row strong {
+  font-size: 18px;
+  white-space: nowrap;
+}
+
 @media (min-width: 720px) {
   .account-card-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -770,5 +989,28 @@ textarea {
 
   .record-toolbar label {
     width: 160px;
+  }
+
+  .report-range-row strong {
+    font-size: 17px;
+  }
+
+  .report-segment button,
+  .report-period-grid button {
+    font-size: 16px;
+  }
+
+  .report-legend {
+    gap: 11px;
+  }
+
+  .report-legend-item {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    gap: 7px;
+  }
+
+  .report-color-square {
+    width: 22px;
+    height: 22px;
   }
 }
