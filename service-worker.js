@@ -1,10 +1,14 @@
-const CACHE_NAME = "charge-app-v8";
+const CACHE_NAME = "charge-app-v9";
 
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.json",
   "./assets/icon.svg",
+  "./assets/icon-192.png",
+  "./assets/icon-512.png",
+  "./assets/icon-maskable-512.png",
+  "./assets/apple-touch-icon.png",
   "./css/style.css",
   "./js/app.js",
   "./js/storage.js",

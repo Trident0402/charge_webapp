@@ -611,3 +611,29 @@ http://127.0.0.1:8000
 - 若已存在相同名稱或相同預設 ID 的帳戶，就視為已存在，不再新增。
 - 如果使用者已經有重複帳戶，系統不自動合併、不刪除、不更動既有資料。
 - 執行後顯示本次新增幾個帳戶；若五個都已存在，提示已不需新增。
+
+### 12.7 iOS / Android 可安裝 Web App
+
+- App 以 PWA 方式支援 iOS 與 Android 安裝到手機主畫面。
+- `manifest.json` 補齊安裝需要的欄位：
+  - `id`
+  - `scope`
+  - `start_url`
+  - `display: standalone`
+  - `orientation: portrait-primary`
+  - `theme_color`
+  - `background_color`
+  - PNG icon
+  - maskable icon
+- `index.html` 補上 iOS 需要的 meta 與 icon：
+  - `apple-mobile-web-app-capable`
+  - `apple-mobile-web-app-title`
+  - `apple-mobile-web-app-status-bar-style`
+  - `apple-touch-icon`
+- `assets/` 新增常用安裝圖示：
+  - `icon-192.png`
+  - `icon-512.png`
+  - `apple-touch-icon.png`
+- `service-worker.js` 將新增的 icon 加入快取清單，讓安裝後離線也能正確顯示圖示。
+- 正式部署需使用 HTTPS；GitHub Pages 預設提供 HTTPS，符合 iOS / Android 安裝需求。
+- 此功能不新增後端，也不需要打包工具，仍維持純 HTML / CSS / JS。
