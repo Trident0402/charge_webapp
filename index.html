@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#1f7667" />
-    <title>資產資料夾</title>
+    <title>資產總覽</title>
     <link rel="manifest" href="./manifest.json" />
     <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./css/style.css" />
@@ -16,8 +16,8 @@
           <span aria-hidden="true">‹</span>
         </button>
         <div class="app-title-block">
-          <h1 id="appTitle">資產資料夾</h1>
-          <p id="appSubtitle">離線個人資產管理</p>
+          <h1 id="appTitle">資產總覽</h1>
+          <p id="appSubtitle">離線資產管理</p>
         </div>
       </header>
 
@@ -26,10 +26,10 @@
           <h2 class="sr-only" id="homeTitle">首頁</h2>
           <div id="homeSummary"></div>
           <div class="section-heading">
-            <h2>帳戶</h2>
+            <h2>資產帳戶</h2>
             <button class="primary-button" id="openAccountFormButton" type="button">新增帳戶</button>
           </div>
-          <div class="account-folder-grid" id="accountFolderList"></div>
+          <div class="account-card-grid" id="accountFolderList"></div>
         </section>
 
         <section class="view" id="view-account-detail" aria-labelledby="accountDetailTitle">
@@ -55,7 +55,7 @@
                   <option value="other">其他</option>
                 </select>
               </label>
-              <label>
+              <label id="accountInitialBalanceField">
                 初始金額
                 <input id="accountInitialBalance" name="initialBalance" type="number" inputmode="decimal" step="1" value="0" required />
               </label>
@@ -75,13 +75,13 @@
           <div class="panel">
             <h2 id="transactionFormTitle">新增紀錄</h2>
             <form id="transactionForm" class="form-stack">
+              <input type="hidden" id="transactionId" />
               <input type="hidden" id="transactionAccountId" />
               <label>
                 類型
                 <select id="transactionType" name="type" required>
                   <option value="income">收入</option>
                   <option value="expense">支出</option>
-                  <option value="adjustment">調整</option>
                 </select>
               </label>
               <label>
@@ -104,6 +104,38 @@
                 <button class="secondary-button" type="button" data-back-account>取消</button>
                 <button class="primary-button" type="submit">儲存</button>
               </div>
+              <button class="danger-button is-hidden" id="deleteTransactionButton" type="button">刪除這筆紀錄</button>
+            </form>
+          </div>
+        </section>
+
+        <section class="view" id="view-transfer-form" aria-labelledby="transferFormTitle">
+          <div class="panel">
+            <h2 id="transferFormTitle">帳戶轉帳</h2>
+            <form id="transferForm" class="form-stack">
+              <input type="hidden" id="transferId" />
+              <input type="hidden" id="transferFromAccountId" />
+              <label>
+                轉入帳戶
+                <select id="transferToAccountId" name="toAccountId" required></select>
+              </label>
+              <label>
+                金額
+                <input id="transferAmount" name="amount" type="number" inputmode="decimal" step="1" required />
+              </label>
+              <label>
+                日期
+                <input id="transferDate" name="date" type="date" required />
+              </label>
+              <label>
+                原因
+                <textarea id="transferReason" name="reason" rows="3" placeholder="例如：生活費、投資款、帳戶整理"></textarea>
+              </label>
+              <div class="button-row">
+                <button class="secondary-button" type="button" data-back-account>取消</button>
+                <button class="primary-button" type="submit">儲存</button>
+              </div>
+              <button class="danger-button is-hidden" id="deleteTransferButton" type="button">刪除這筆轉帳</button>
             </form>
           </div>
         </section>
@@ -112,6 +144,7 @@
           <div class="panel">
             <h2 id="stockTradeFormTitle">新增股票交易</h2>
             <form id="stockTradeForm" class="form-stack">
+              <input type="hidden" id="stockTradeId" />
               <input type="hidden" id="stockTradeAccountId" />
               <label>
                 類型
@@ -123,13 +156,15 @@
               <div class="form-grid">
                 <label>
                   股票代號
-                  <input id="stockSymbol" name="symbol" type="text" autocomplete="off" required />
+                  <input id="stockSymbol" name="symbol" type="text" autocomplete="off" list="stockSymbolList" required />
                 </label>
                 <label>
                   股票名稱
-                  <input id="stockName" name="name" type="text" autocomplete="off" required />
+                  <input id="stockName" name="name" type="text" autocomplete="off" list="stockNameList" required />
                 </label>
               </div>
+              <datalist id="stockSymbolList"></datalist>
+              <datalist id="stockNameList"></datalist>
               <div class="form-grid">
                 <label>
                   股數
@@ -158,6 +193,7 @@
                 <button class="secondary-button" type="button" data-back-account>取消</button>
                 <button class="primary-button" type="submit">儲存</button>
               </div>
+              <button class="danger-button is-hidden" id="deleteStockTradeButton" type="button">刪除這筆股票交易</button>
             </form>
           </div>
         </section>
@@ -166,10 +202,11 @@
           <div class="panel">
             <h2 id="stockPriceFormTitle">新增每日市價</h2>
             <form id="stockPriceForm" class="form-stack">
+              <input type="hidden" id="stockPriceId" />
               <input type="hidden" id="stockPriceAccountId" />
               <label>
                 股票代號
-                <input id="priceStockSymbol" name="symbol" type="text" autocomplete="off" required />
+                <input id="priceStockSymbol" name="symbol" type="text" autocomplete="off" list="stockSymbolList" required />
               </label>
               <label>
                 市價
@@ -187,6 +224,7 @@
                 <button class="secondary-button" type="button" data-back-account>取消</button>
                 <button class="primary-button" type="submit">儲存</button>
               </div>
+              <button class="danger-button is-hidden" id="deleteStockPriceButton" type="button">刪除這筆市價紀錄</button>
             </form>
           </div>
         </section>
