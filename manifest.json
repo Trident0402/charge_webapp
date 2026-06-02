@@ -1,0 +1,16 @@
+{
+  "name": "資產資料夾",
+  "short_name": "資產",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f5f7f8",
+  "theme_color": "#1f7667",
+  "icons": [
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

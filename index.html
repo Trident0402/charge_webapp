@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#1f7667" />
+    <title>資產資料夾</title>
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <button class="icon-button is-hidden" id="backButton" type="button" aria-label="返回">
+          <span aria-hidden="true">‹</span>
+        </button>
+        <div class="app-title-block">
+          <h1 id="appTitle">資產資料夾</h1>
+          <p id="appSubtitle">離線個人資產管理</p>
+        </div>
+      </header>
+
+      <main class="app-main">
+        <section class="view is-active" id="view-home" aria-labelledby="homeTitle">
+          <h2 class="sr-only" id="homeTitle">首頁</h2>
+          <div id="homeSummary"></div>
+          <div class="section-heading">
+            <h2>帳戶</h2>
+            <button class="primary-button" id="openAccountFormButton" type="button">新增帳戶</button>
+          </div>
+          <div class="account-folder-grid" id="accountFolderList"></div>
+        </section>
+
+        <section class="view" id="view-account-detail" aria-labelledby="accountDetailTitle">
+          <div id="accountDetail"></div>
+        </section>
+
+        <section class="view" id="view-account-form" aria-labelledby="accountFormTitle">
+          <div class="panel">
+            <h2 id="accountFormTitle">新增帳戶</h2>
+            <form id="accountForm" class="form-stack">
+              <input type="hidden" id="accountId" />
+              <label>
+                帳戶名稱
+                <input id="accountName" name="name" type="text" autocomplete="off" required />
+              </label>
+              <label>
+                帳戶類型
+                <select id="accountType" name="type" required>
+                  <option value="bank">銀行帳戶</option>
+                  <option value="linepay">Line Pay Money</option>
+                  <option value="wallet">錢包</option>
+                  <option value="stock">股票帳戶</option>
+                  <option value="other">其他</option>
+                </select>
+              </label>
+              <label>
+                初始金額
+                <input id="accountInitialBalance" name="initialBalance" type="number" inputmode="decimal" step="1" value="0" required />
+              </label>
+              <label>
+                備註
+                <textarea id="accountNote" name="note" rows="3"></textarea>
+              </label>
+              <div class="button-row">
+                <button class="secondary-button" type="button" data-nav="home">取消</button>
+                <button class="primary-button" type="submit">儲存</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="view" id="view-transaction-form" aria-labelledby="transactionFormTitle">
+          <div class="panel">
+            <h2 id="transactionFormTitle">新增紀錄</h2>
+            <form id="transactionForm" class="form-stack">
+              <input type="hidden" id="transactionAccountId" />
+              <label>
+                類型
+                <select id="transactionType" name="type" required>
+                  <option value="income">收入</option>
+                  <option value="expense">支出</option>
+                  <option value="adjustment">調整</option>
+                </select>
+              </label>
+              <label>
+                金額
+                <input id="transactionAmount" name="amount" type="number" inputmode="decimal" step="1" required />
+              </label>
+              <label>
+                日期
+                <input id="transactionDate" name="date" type="date" required />
+              </label>
+              <label>
+                分類
+                <input id="transactionCategory" name="category" type="text" autocomplete="off" placeholder="薪資、飲食、交通..." />
+              </label>
+              <label>
+                備註
+                <textarea id="transactionNote" name="note" rows="3"></textarea>
+              </label>
+              <div class="button-row">
+                <button class="secondary-button" type="button" data-back-account>取消</button>
+                <button class="primary-button" type="submit">儲存</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="view" id="view-stock-trade-form" aria-labelledby="stockTradeFormTitle">
+          <div class="panel">
+            <h2 id="stockTradeFormTitle">新增股票交易</h2>
+            <form id="stockTradeForm" class="form-stack">
+              <input type="hidden" id="stockTradeAccountId" />
+              <label>
+                類型
+                <select id="stockTradeType" name="type" required>
+                  <option value="buy">買入</option>
+                  <option value="sell">賣出</option>
+                </select>
+              </label>
+              <div class="form-grid">
+                <label>
+                  股票代號
+                  <input id="stockSymbol" name="symbol" type="text" autocomplete="off" required />
+                </label>
+                <label>
+                  股票名稱
+                  <input id="stockName" name="name" type="text" autocomplete="off" required />
+                </label>
+              </div>
+              <div class="form-grid">
+                <label>
+                  股數
+                  <input id="stockShares" name="shares" type="number" inputmode="decimal" step="0.0001" required />
+                </label>
+                <label>
+                  價格
+                  <input id="stockPrice" name="price" type="number" inputmode="decimal" step="0.01" required />
+                </label>
+              </div>
+              <div class="form-grid">
+                <label>
+                  手續費
+                  <input id="stockFee" name="fee" type="number" inputmode="decimal" step="1" value="0" />
+                </label>
+                <label>
+                  稅費
+                  <input id="stockTax" name="tax" type="number" inputmode="decimal" step="1" value="0" />
+                </label>
+              </div>
+              <label>
+                日期
+                <input id="stockTradeDate" name="date" type="date" required />
+              </label>
+              <div class="button-row">
+                <button class="secondary-button" type="button" data-back-account>取消</button>
+                <button class="primary-button" type="submit">儲存</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="view" id="view-stock-price-form" aria-labelledby="stockPriceFormTitle">
+          <div class="panel">
+            <h2 id="stockPriceFormTitle">新增每日市價</h2>
+            <form id="stockPriceForm" class="form-stack">
+              <input type="hidden" id="stockPriceAccountId" />
+              <label>
+                股票代號
+                <input id="priceStockSymbol" name="symbol" type="text" autocomplete="off" required />
+              </label>
+              <label>
+                市價
+                <input id="manualStockPrice" name="price" type="number" inputmode="decimal" step="0.01" required />
+              </label>
+              <label>
+                日期
+                <input id="manualStockPriceDate" name="date" type="date" required />
+              </label>
+              <label>
+                備註
+                <textarea id="stockPriceNote" name="note" rows="3"></textarea>
+              </label>
+              <div class="button-row">
+                <button class="secondary-button" type="button" data-back-account>取消</button>
+                <button class="primary-button" type="submit">儲存</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="view" id="view-expected-income" aria-labelledby="expectedIncomeTitle">
+          <div id="expectedIncomePage"></div>
+        </section>
+
+        <section class="view" id="view-settings" aria-labelledby="settingsTitle">
+          <div id="settingsPage"></div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="主要導覽">
+        <button type="button" data-nav="home">首頁</button>
+        <button type="button" data-nav="expected-income">預期入帳</button>
+        <button type="button" data-nav="settings">設定</button>
+      </nav>
+    </div>
+
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>
