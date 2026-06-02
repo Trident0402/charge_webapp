@@ -1,5 +1,6 @@
 import { getAccountDisplayValue, getCashAccountTotal, renderAccountDetail, bindAccountForm } from "./accounts.js";
 import { renderExpectedIncomePage, getExpectedIncomeSummary } from "./expected-income.js";
+import { renderMonthlyReportPage } from "./monthly-report.js";
 import { renderSettingsPage } from "./settings.js";
 import { getAllStockMarketValue } from "./stocks.js";
 import { bindStockForms } from "./stocks.js";
@@ -84,16 +85,21 @@ function renderAccountFolders() {
 
   return data.accounts
     .map(
-      (account) => `
+      (account) => {
+        const iconSrc = ACCOUNT_ICONS[account.type] || ACCOUNT_ICONS.other;
+        return `
         <button class="account-card" type="button" data-account-id="${account.id}">
-          <span class="account-card-icon" aria-hidden="true">${ACCOUNT_ICONS[account.type] || ACCOUNT_ICONS.other}</span>
+          <span class="account-card-icon" aria-hidden="true">
+            <img src="${iconSrc}" alt="" />
+          </span>
           <div>
             <h3>${escapeHtml(account.name)}</h3>
             <p>${ACCOUNT_TYPES[account.type] || "帳戶"}</p>
           </div>
           <strong>${formatCurrency(getAccountDisplayValue(account))}</strong>
         </button>
-      `
+      `;
+      }
     )
     .join("");
 }
@@ -139,6 +145,7 @@ function bindGlobalEvents() {
     button.addEventListener("click", () => {
       if (button.dataset.nav === "home") renderHome();
       if (button.dataset.nav === "expected-income") renderExpectedIncomePage();
+      if (button.dataset.nav === "monthly-report") renderMonthlyReportPage();
       if (button.dataset.nav === "settings") renderSettingsPage();
     });
   });

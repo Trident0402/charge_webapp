@@ -7,11 +7,11 @@ export const ACCOUNT_TYPES = {
 };
 
 export const ACCOUNT_ICONS = {
-  bank: "🏦",
-  linepay: "💚",
-  wallet: "👛",
-  stock: "📈",
-  other: "📁"
+  bank: "./assets/bank.png",
+  linepay: "./assets/line.png",
+  wallet: "./assets/cash.png",
+  stock: "./assets/stock.png",
+  other: "./assets/icon.svg"
 };
 
 export const TRANSACTION_TYPES = {

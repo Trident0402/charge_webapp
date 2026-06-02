@@ -16,7 +16,65 @@ import {
   todayString
 } from "./utils.js";
 
+const BASE_TRANSACTION_CATEGORIES = [
+  "薪資",
+  "早餐",
+  "午餐",
+  "晚餐",
+  "飲料",
+  "房租",
+  "電費",
+  "電話費",
+  "旅遊",
+  "生活必需品",
+  "健康",
+  "串流服務"
+];
+
+function normalizeCategory(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function addUniqueCategory(categories, category) {
+  const cleanCategory = String(category || "").trim();
+  if (!cleanCategory) return;
+  if (!categories.some((item) => normalizeCategory(item) === normalizeCategory(cleanCategory))) {
+    categories.push(cleanCategory);
+  }
+}
+
+export function rememberTransactionCategory(category) {
+  const cleanCategory = String(category || "").trim();
+  if (!cleanCategory) return false;
+  const isBaseCategory = BASE_TRANSACTION_CATEGORIES.some((item) => normalizeCategory(item) === normalizeCategory(cleanCategory));
+  const alreadySaved = data.transactionCategories.some((item) => normalizeCategory(item) === normalizeCategory(cleanCategory));
+  if (isBaseCategory || alreadySaved) return false;
+  data.transactionCategories.push(cleanCategory);
+  return true;
+}
+
+export function getTransactionCategories() {
+  const categories = [...BASE_TRANSACTION_CATEGORIES];
+  (data.transactionCategories || []).forEach((category) => addUniqueCategory(categories, category));
+  data.transactions.forEach((transaction) => {
+    if (!["income", "expense"].includes(transaction.type)) return;
+    const category = String(transaction.category || "").trim();
+    if (!category) return;
+    addUniqueCategory(categories, category);
+  });
+  return categories;
+}
+
+function updateTransactionCategoryDatalist() {
+  const datalist = $("#transactionCategoryList");
+  if (!datalist) return;
+  datalist.innerHTML = getTransactionCategories()
+    .map((category) => `<option value="${escapeHtml(category)}"></option>`)
+    .join("");
+}
+
 export function createTransaction(input) {
+  rememberTransactionCategory(input.category);
   const transaction = {
     id: createId("txn"),
     accountId: input.accountId,
@@ -35,6 +93,7 @@ export function createTransaction(input) {
 export function updateTransaction(transactionId, input) {
   const transaction = data.transactions.find((item) => item.id === transactionId);
   if (!transaction) return null;
+  rememberTransactionCategory(input.category);
   transaction.type = input.type;
   transaction.amount = Number(input.amount) || 0;
   transaction.category = input.category || "";
@@ -153,10 +212,10 @@ export function renderTransactionList(accountId, month) {
                   <div class="item-title">${TRANSACTION_TYPES[transaction.type] || transaction.type}</div>
                   <div class="item-meta">
                     ${escapeHtml(transaction.date)}
-                    ${transaction.category ? ` · ${escapeHtml(transaction.category)}` : ""}
                     ${relatedText}
                     ${transaction.note ? ` · ${escapeHtml(transaction.note)}` : ""}
                   </div>
+                  ${transaction.category ? `<span class="category-tag">${escapeHtml(transaction.category)}</span>` : ""}
                 </div>
                 <div class="transaction-amount ${amountClass(signedAmount)}">${formatCurrency(signedAmount)}</div>
               </div>
@@ -170,6 +229,7 @@ export function renderTransactionList(accountId, month) {
 
 export function openTransactionForm(accountId, type = "income") {
   $("#transactionForm").reset();
+  updateTransactionCategoryDatalist();
   $("#transactionId").value = "";
   $("#transactionAccountId").value = accountId;
   $("#deleteTransactionButton").classList.add("is-hidden");
@@ -186,6 +246,7 @@ export function openEditTransactionForm(transactionId) {
   const transaction = data.transactions.find((item) => item.id === transactionId);
   if (!transaction) return;
   $("#transactionForm").reset();
+  updateTransactionCategoryDatalist();
   $("#transactionId").value = transaction.id;
   $("#transactionAccountId").value = transaction.accountId;
   $("#transactionType").value = transaction.type;
