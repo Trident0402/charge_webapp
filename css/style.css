@@ -628,6 +628,29 @@ textarea {
   font-weight: 900;
 }
 
+.expected-income-card {
+  display: grid;
+  gap: 8px;
+}
+
+.expected-income-note {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.expected-income-actions {
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+.compact-toggle-button {
+  min-height: 30px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
 .amount-positive {
   color: var(--income);
 }
