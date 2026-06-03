@@ -24,7 +24,7 @@ html {
   min-height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "HanziPen TC", "PingFang TC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 body {
@@ -642,6 +642,88 @@ textarea {
 .settings-actions {
   display: grid;
   gap: 10px;
+}
+
+.record-slot-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.record-slot-current {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.record-slot-current span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.record-slot-current strong {
+  font-size: 18px;
+}
+
+.record-slot-list {
+  display: grid;
+  gap: 10px;
+}
+
+.record-slot-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.record-slot-card.is-active {
+  border-color: rgba(31, 118, 103, 0.35);
+  background: var(--surface-soft);
+}
+
+.record-slot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.record-slot-header .item-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-slot-rename-button {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.record-slot-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.record-slot-actions button {
+  flex: 0 0 auto;
+  min-width: 112px;
+  min-height: 38px;
 }
 
 .list-card {
