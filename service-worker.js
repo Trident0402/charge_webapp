@@ -1,4 +1,4 @@
-const CACHE_NAME = "charge-app-v27";
+const CACHE_NAME = "charge-app-v32";
 
 const APP_SHELL = [
   "./",
