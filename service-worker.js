@@ -1,4 +1,4 @@
-const CACHE_NAME = "charge-app-v19";
+const CACHE_NAME = "charge-app-v27";
 
 const APP_SHELL = [
   "./",
@@ -19,6 +19,7 @@ const APP_SHELL = [
   "./js/accounts.js",
   "./js/transactions.js",
   "./js/stocks.js",
+  "./js/crypto.js",
   "./js/expected-income.js",
   "./js/monthly-report.js",
   "./js/settings.js",

@@ -34,7 +34,7 @@
             <h2>資產帳戶</h2>
             <button class="primary-button" id="openAccountFormButton" type="button">新增帳戶</button>
           </div>
-          <div class="account-card-grid" id="accountFolderList"></div>
+          <div class="account-section" id="accountFolderList"></div>
         </section>
 
         <section class="view" id="view-account-detail" aria-labelledby="accountDetailTitle">
@@ -54,9 +54,10 @@
                 帳戶類型
                 <select id="accountType" name="type" required>
                   <option value="bank">銀行帳戶</option>
-                  <option value="linepay">Line Pay Money</option>
+                  <option value="linepay">行動支付</option>
                   <option value="wallet">錢包</option>
                   <option value="stock">股票帳戶</option>
+                  <option value="crypto">虛擬貨幣帳戶</option>
                   <option value="other">其他</option>
                 </select>
               </label>
@@ -231,6 +232,101 @@
                 <button class="primary-button" type="submit">儲存</button>
               </div>
               <button class="danger-button is-hidden" id="deleteStockPriceButton" type="button">刪除這筆市價紀錄</button>
+            </form>
+          </div>
+        </section>
+
+        <section class="view" id="view-crypto-trade-form" aria-labelledby="cryptoTradeFormTitle">
+          <div class="panel">
+            <h2 id="cryptoTradeFormTitle">新增虛擬貨幣交易</h2>
+            <form id="cryptoTradeForm" class="form-stack">
+              <input type="hidden" id="cryptoTradeId" />
+              <input type="hidden" id="cryptoTradeAccountId" />
+              <label>
+                類型
+                <select id="cryptoTradeType" name="type" required>
+                  <option value="buy">買入</option>
+                  <option value="sell">賣出</option>
+                </select>
+              </label>
+              <div class="form-grid">
+                <label>
+                  幣種代號
+                  <input id="cryptoSymbol" name="symbol" type="text" autocomplete="off" list="cryptoSymbolList" placeholder="BTC" required />
+                </label>
+                <label>
+                  幣種名稱
+                  <input id="cryptoName" name="name" type="text" autocomplete="off" list="cryptoNameList" placeholder="Bitcoin" required />
+                </label>
+              </div>
+              <datalist id="cryptoSymbolList"></datalist>
+              <datalist id="cryptoNameList"></datalist>
+              <div class="form-grid">
+                <label>
+                  數量
+                  <input id="cryptoQuantity" name="quantity" type="number" inputmode="decimal" step="0.00000001" required />
+                </label>
+                <label>
+                  美元單價
+                  <input id="cryptoPriceUsd" name="priceUsd" type="number" inputmode="decimal" step="0.000001" required />
+                </label>
+              </div>
+              <div class="form-grid">
+                <label>
+                  台幣美金匯率
+                  <input id="cryptoFxRate" name="fxRate" type="number" inputmode="decimal" step="0.0001" required />
+                </label>
+                <label>
+                  手續費（美元）
+                  <input id="cryptoFeeUsd" name="feeUsd" type="number" inputmode="decimal" step="0.000001" value="0" />
+                </label>
+              </div>
+              <label>
+                日期
+                <input id="cryptoTradeDate" name="date" type="date" required />
+              </label>
+              <div class="button-row">
+                <button class="secondary-button" type="button" data-back-account>取消</button>
+                <button class="primary-button" type="submit">儲存</button>
+              </div>
+              <button class="danger-button is-hidden" id="deleteCryptoTradeButton" type="button">刪除這筆虛擬貨幣交易</button>
+            </form>
+          </div>
+        </section>
+
+        <section class="view" id="view-crypto-price-form" aria-labelledby="cryptoPriceFormTitle">
+          <div class="panel">
+            <h2 id="cryptoPriceFormTitle">新增虛擬貨幣市價</h2>
+            <form id="cryptoPriceForm" class="form-stack">
+              <input type="hidden" id="cryptoPriceId" />
+              <input type="hidden" id="cryptoPriceAccountId" />
+              <label>
+                幣種代號
+                <input id="priceCryptoSymbol" name="symbol" type="text" autocomplete="off" list="cryptoSymbolList" placeholder="BTC" required />
+              </label>
+              <div class="form-grid">
+                <label>
+                  美元市價
+                  <input id="manualCryptoPriceUsd" name="priceUsd" type="number" inputmode="decimal" step="0.000001" required />
+                </label>
+                <label>
+                  台幣美金匯率
+                  <input id="manualCryptoFxRate" name="fxRate" type="number" inputmode="decimal" step="0.0001" required />
+                </label>
+              </div>
+              <label>
+                日期
+                <input id="manualCryptoPriceDate" name="date" type="date" required />
+              </label>
+              <label>
+                備註
+                <textarea id="cryptoPriceNote" name="note" rows="3"></textarea>
+              </label>
+              <div class="button-row">
+                <button class="secondary-button" type="button" data-back-account>取消</button>
+                <button class="primary-button" type="submit">儲存</button>
+              </div>
+              <button class="danger-button is-hidden" id="deleteCryptoPriceButton" type="button">刪除這筆虛擬貨幣市價紀錄</button>
             </form>
           </div>
         </section>
