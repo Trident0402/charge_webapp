@@ -1,4 +1,4 @@
-const CACHE_NAME = "charge-app-v33";
+const CACHE_NAME = "charge-app-v34";
 
 const APP_SHELL = [
   "./",
@@ -11,6 +11,7 @@ const APP_SHELL = [
   "./assets/apple-touch-icon.png",
   "./assets/bank.png",
   "./assets/stock.png",
+  "./assets/Crypto.png",
   "./assets/cash.png",
   "./assets/line.png",
   "./css/style.css",
