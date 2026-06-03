@@ -1,5 +1,14 @@
-import { addMissingBaseAccounts, clearData, data, replaceData } from "./storage.js";
-import { $, requestHome, requestView, setHtml, showError } from "./utils.js";
+import {
+  addMissingBaseAccounts,
+  clearData,
+  data,
+  getActiveRecordSlot,
+  getRecordSlotStatuses,
+  importDataToRecordSlot,
+  renameRecordSlot,
+  switchRecordSlot
+} from "./storage.js";
+import { $, escapeHtml, requestHome, requestView, setHtml, showError } from "./utils.js";
 
 export function renderSettingsPage() {
   setHtml(
@@ -11,12 +20,19 @@ export function renderSettingsPage() {
           <button class="secondary-button" id="addBaseAccountsButton" type="button">新增基礎帳戶</button>
           <button class="primary-button" id="exportBackupButton" type="button">匯出 JSON 備份</button>
           <label>
+            匯入目標紀錄檔
+            <select id="importRecordSlotId">
+              ${renderImportRecordSlotOptions()}
+            </select>
+          </label>
+          <label>
             匯入 JSON 備份
             <input class="file-input" id="importBackupInput" type="file" accept="application/json,.json" />
           </label>
           <button class="danger-button" id="clearDataButton" type="button">清除全部資料</button>
         </div>
       </div>
+      ${renderRecordSlotPanel()}
       <div class="section-heading"><h2>資料狀態</h2></div>
       <div class="panel">
         <div class="metric-grid">
@@ -38,6 +54,52 @@ export function renderSettingsPage() {
   });
 }
 
+function renderRecordSlotPanel() {
+  const activeSlot = getActiveRecordSlot();
+  const slots = getRecordSlotStatuses();
+  return `
+    <div class="section-heading"><h2>紀錄檔切換</h2></div>
+    <div class="panel record-slot-panel">
+      <div class="record-slot-current">
+        <span>目前使用</span>
+        <strong>${escapeHtml(activeSlot.label)}</strong>
+      </div>
+      <div class="record-slot-list">
+        ${slots
+          .map(
+            (slot) => `
+              <article class="record-slot-card ${slot.isActive ? "is-active" : ""}">
+                <div class="record-slot-header">
+                  <div class="item-title">${escapeHtml(slot.label)}</div>
+                  <button class="record-slot-rename-button" type="button" data-rename-record-slot="${slot.id}">重新命名</button>
+                </div>
+                <div>
+                  <div class="item-meta">
+                    ${slot.exists ? `帳戶 ${slot.accountCount} · 收支 ${slot.transactionCount} · 股票 ${slot.stockTradeCount} · 虛擬貨幣 ${slot.cryptoTradeCount}` : "尚未建立，切換後會建立基礎資料"}
+                  </div>
+                </div>
+                <div class="record-slot-actions">
+                  ${
+                    slot.isActive
+                      ? `<span class="received-badge">目前使用</span>`
+                      : `<button class="secondary-button" type="button" data-switch-record-slot="${slot.id}">切換</button>`
+                  }
+                </div>
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderImportRecordSlotOptions() {
+  return getRecordSlotStatuses()
+    .map((slot) => `<option value="${slot.id}" ${slot.isActive ? "selected" : ""}>${escapeHtml(slot.label)}</option>`)
+    .join("");
+}
+
 function bindSettingsEvents() {
   $("#addBaseAccountsButton")?.addEventListener("click", () => {
     const result = addMissingBaseAccounts();
@@ -47,25 +109,68 @@ function bindSettingsEvents() {
 
   $("#exportBackupButton")?.addEventListener("click", exportBackup);
 
+  document.querySelectorAll("[data-rename-record-slot]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = getRecordSlotStatuses().find((slot) => slot.id === button.dataset.renameRecordSlot);
+      if (!target) return;
+      const nextName = prompt(`請輸入「${target.label}」的新名稱`, target.label);
+      if (nextName === null) return;
+      try {
+        const renamedSlot = renameRecordSlot(target.id, nextName);
+        alert(`已重新命名為「${renamedSlot.label}」。`);
+        renderSettingsPage();
+      } catch (error) {
+        showError(error);
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-switch-record-slot]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = getRecordSlotStatuses().find((slot) => slot.id === button.dataset.switchRecordSlot);
+      if (!target) return;
+      const message = target.exists
+        ? `要切換到「${target.label}」嗎？目前紀錄檔會先保存，再載入「${target.label}」。`
+        : `「${target.label}」尚未建立。要切換並建立一份新的基礎資料嗎？目前紀錄檔會先保存。`;
+      if (!confirm(message)) return;
+      const activeSlot = switchRecordSlot(target.id);
+      alert(`已切換到「${activeSlot.label}」。`);
+      renderSettingsPage();
+    });
+  });
+
   $("#importBackupInput")?.addEventListener("change", async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (!confirm("匯入會覆蓋目前資料，確定繼續？")) return;
+    const activeSlot = getActiveRecordSlot();
+    const targetSlot = getRecordSlotStatuses().find((slot) => slot.id === $("#importRecordSlotId")?.value) || activeSlot;
+    if (
+      !confirm(
+        `目前正在使用「${activeSlot.label}」。\n\n匯入會覆蓋「${targetSlot.label}」資料。\n\n「${targetSlot.label}」原本的資料會消失，確定繼續？`
+      )
+    ) {
+      event.target.value = "";
+      return;
+    }
     try {
       const importedData = await readJsonFile(file);
       if (!Array.isArray(importedData.accounts) || !Array.isArray(importedData.transactions)) {
         throw new Error("備份檔格式不正確");
       }
-      replaceData(importedData);
-      alert("匯入完成");
-      requestHome();
+      const importedSlot = importDataToRecordSlot(targetSlot.id, importedData);
+      alert(`已匯入並覆蓋「${importedSlot.label}」。`);
+      if (importedSlot.id === activeSlot.id) requestHome();
+      else renderSettingsPage();
     } catch (error) {
       showError(error);
+    } finally {
+      event.target.value = "";
     }
   });
 
   $("#clearDataButton")?.addEventListener("click", () => {
-    if (!confirm("確定要清除全部資料？這個動作無法復原。")) return;
+    const activeSlot = getActiveRecordSlot();
+    if (!confirm(`確定要清除目前使用的「${activeSlot.label}」全部資料？這個動作無法復原。`)) return;
     clearData();
     requestHome();
   });
@@ -73,11 +178,13 @@ function bindSettingsEvents() {
 
 function exportBackup() {
   const date = new Date().toISOString().slice(0, 10);
+  const activeSlot = getActiveRecordSlot();
+  const safeSlotLabel = activeSlot.label.replace(/[\\/:*?"<>|]/g, "-").trim() || "紀錄檔";
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `charge-app-backup-${date}.json`;
+  link.download = `charge-app-${safeSlotLabel}-${date}.json`;
   link.click();
   URL.revokeObjectURL(url);
 }

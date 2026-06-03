@@ -1,5 +1,13 @@
 const STORAGE_KEY = "chargeAppData";
+const ACTIVE_RECORD_SLOT_KEY = "chargeAppActiveRecordSlot";
+const RECORD_SLOT_LABELS_KEY = "chargeAppRecordSlotLabels";
+const RECORD_SLOT_PREFIX = "chargeAppRecordSlot:";
 const DATA_VERSION = 1;
+
+export const RECORD_SLOTS = [
+  { id: "slot1", label: "紀錄檔 1" },
+  { id: "slot2", label: "紀錄檔 2" }
+];
 
 const BASE_ACCOUNT_DEFINITIONS = [
   {
@@ -30,9 +38,55 @@ const BASE_ACCOUNT_DEFINITIONS = [
 ];
 
 export let data = createDefaultData();
+export let activeRecordSlotId = "slot1";
 
 function normalizeAccountName(name) {
   return String(name || "").trim().toLowerCase();
+}
+
+function normalizeRecordSlotId(slotId) {
+  return RECORD_SLOTS.some((slot) => slot.id === slotId) ? slotId : RECORD_SLOTS[0].id;
+}
+
+function getRecordSlotStorageKey(slotId) {
+  return `${RECORD_SLOT_PREFIX}${normalizeRecordSlotId(slotId)}`;
+}
+
+function getRecordSlotLabel(slotId) {
+  const normalizedSlotId = normalizeRecordSlotId(slotId);
+  const labels = readRecordSlotLabels();
+  const customLabel = String(labels[normalizedSlotId] || "").trim();
+  if (customLabel) return customLabel;
+  return RECORD_SLOTS.find((slot) => slot.id === normalizedSlotId)?.label || "紀錄檔";
+}
+
+function readRecordSlotLabels() {
+  try {
+    const stored = localStorage.getItem(RECORD_SLOT_LABELS_KEY);
+    const labels = stored ? JSON.parse(stored) : {};
+    return labels && typeof labels === "object" ? labels : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveRecordSlotLabels(labels) {
+  localStorage.setItem(RECORD_SLOT_LABELS_KEY, JSON.stringify(labels));
+}
+
+function readStoredData(key) {
+  try {
+    const stored = localStorage.getItem(key);
+    if (!stored) return null;
+    return normalizeData(JSON.parse(stored));
+  } catch {
+    return null;
+  }
+}
+
+function readRecordSlotData(slotId) {
+  const normalizedSlotId = normalizeRecordSlotId(slotId);
+  return readStoredData(getRecordSlotStorageKey(normalizedSlotId)) || (normalizedSlotId === "slot1" ? readStoredData(STORAGE_KEY) : null);
 }
 
 export function createDefaultAccounts() {
@@ -106,16 +160,24 @@ function normalizeData(rawData) {
 
 export function loadData() {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    data = normalizeData(stored ? JSON.parse(stored) : null);
+    activeRecordSlotId = normalizeRecordSlotId(localStorage.getItem(ACTIVE_RECORD_SLOT_KEY) || "slot1");
+    data = readRecordSlotData(activeRecordSlotId) || createDefaultData();
+    saveData();
   } catch {
+    activeRecordSlotId = "slot1";
     data = createDefaultData();
+    saveData();
   }
   return data;
 }
 
 export function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  const payload = JSON.stringify(data);
+  localStorage.setItem(ACTIVE_RECORD_SLOT_KEY, activeRecordSlotId);
+  localStorage.setItem(getRecordSlotStorageKey(activeRecordSlotId), payload);
+  if (activeRecordSlotId === "slot1") {
+    localStorage.setItem(STORAGE_KEY, payload);
+  }
 }
 
 export function replaceData(nextData) {
@@ -123,7 +185,71 @@ export function replaceData(nextData) {
   saveData();
 }
 
+export function importDataToRecordSlot(slotId, nextData) {
+  const normalizedSlotId = normalizeRecordSlotId(slotId);
+  const normalizedData = normalizeData(nextData);
+  const payload = JSON.stringify(normalizedData);
+  localStorage.setItem(getRecordSlotStorageKey(normalizedSlotId), payload);
+  if (normalizedSlotId === "slot1") {
+    localStorage.setItem(STORAGE_KEY, payload);
+  }
+  if (normalizedSlotId === activeRecordSlotId) {
+    data = normalizedData;
+    saveData();
+  }
+  return {
+    id: normalizedSlotId,
+    label: getRecordSlotLabel(normalizedSlotId)
+  };
+}
+
 export function clearData() {
   data = createDefaultData();
   saveData();
+}
+
+export function getActiveRecordSlot() {
+  return {
+    id: activeRecordSlotId,
+    label: getRecordSlotLabel(activeRecordSlotId)
+  };
+}
+
+export function getRecordSlotStatuses() {
+  return RECORD_SLOTS.map((slot) => {
+    const slotData = readRecordSlotData(slot.id);
+    return {
+      ...slot,
+      label: getRecordSlotLabel(slot.id),
+      isActive: slot.id === activeRecordSlotId,
+      exists: Boolean(slotData),
+      accountCount: slotData?.accounts?.length || 0,
+      transactionCount: slotData?.transactions?.length || 0,
+      stockTradeCount: slotData?.stockTrades?.length || 0,
+      cryptoTradeCount: slotData?.cryptoTrades?.length || 0,
+      expectedIncomeCount: slotData?.expectedIncomes?.length || 0
+    };
+  });
+}
+
+export function renameRecordSlot(slotId, label) {
+  const normalizedSlotId = normalizeRecordSlotId(slotId);
+  const trimmedLabel = String(label || "").trim();
+  if (!trimmedLabel) throw new Error("請輸入紀錄檔名稱");
+  const labels = readRecordSlotLabels();
+  labels[normalizedSlotId] = trimmedLabel.slice(0, 24);
+  saveRecordSlotLabels(labels);
+  return {
+    id: normalizedSlotId,
+    label: getRecordSlotLabel(normalizedSlotId)
+  };
+}
+
+export function switchRecordSlot(slotId) {
+  saveData();
+  activeRecordSlotId = normalizeRecordSlotId(slotId);
+  localStorage.setItem(ACTIVE_RECORD_SLOT_KEY, activeRecordSlotId);
+  data = readRecordSlotData(activeRecordSlotId) || createDefaultData();
+  saveData();
+  return getActiveRecordSlot();
 }
