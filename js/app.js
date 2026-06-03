@@ -20,8 +20,9 @@ import {
 
 window.currentAccountId = null;
 let currentView = "home";
-let activeAccountType = "";
+let activeAccountType = "overview";
 
+const ACCOUNT_OVERVIEW_TYPE = "overview";
 const ACCOUNT_TYPE_ORDER = ["bank", "linepay", "wallet", "stock", "crypto", "other"];
 
 function showView(view, options = {}) {
@@ -90,11 +91,14 @@ function renderAccountFolders() {
   if (!data.accounts.length) return `<div class="empty-state">還沒有帳戶，先新增一個資產帳戶吧</div>`;
 
   const accountTypes = getExistingAccountTypes();
-  if (!accountTypes.includes(activeAccountType)) activeAccountType = accountTypes[0] || "";
-  const visibleAccounts = data.accounts.filter((account) => account.type === activeAccountType);
+  if (activeAccountType !== ACCOUNT_OVERVIEW_TYPE && !accountTypes.includes(activeAccountType)) {
+    activeAccountType = ACCOUNT_OVERVIEW_TYPE;
+  }
+  const visibleAccounts =
+    activeAccountType === ACCOUNT_OVERVIEW_TYPE ? data.accounts : data.accounts.filter((account) => account.type === activeAccountType);
 
   return `
-    ${renderAccountTypeTabs(accountTypes)}
+    ${renderAccountTypeTabs([ACCOUNT_OVERVIEW_TYPE, ...accountTypes])}
     <div class="account-card-grid">
       ${visibleAccounts.map(renderAccountCard).join("")}
     </div>
@@ -111,14 +115,13 @@ function getExistingAccountTypes() {
 }
 
 function renderAccountTypeTabs(accountTypes) {
-  if (accountTypes.length <= 1) return "";
   return `
     <div class="account-type-tabs" aria-label="資產帳戶類別">
       ${accountTypes
         .map(
           (type) => `
             <button class="${type === activeAccountType ? "is-active" : ""}" type="button" data-account-type-tab="${escapeHtml(type)}">
-              ${escapeHtml(ACCOUNT_TYPES[type] || "其他")}
+              ${escapeHtml(type === ACCOUNT_OVERVIEW_TYPE ? "總覽" : ACCOUNT_TYPES[type] || "其他")}
             </button>
           `
         )
