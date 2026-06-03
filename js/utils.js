@@ -1,8 +1,9 @@
 export const ACCOUNT_TYPES = {
   bank: "銀行帳戶",
-  linepay: "Line Pay Money",
+  linepay: "行動支付",
   wallet: "錢包",
   stock: "股票帳戶",
+  crypto: "虛擬貨幣帳戶",
   other: "其他"
 };
 
@@ -11,6 +12,7 @@ export const ACCOUNT_ICONS = {
   linepay: "./assets/line.png",
   wallet: "./assets/cash.png",
   stock: "./assets/stock.png",
+  crypto: "./assets/icon.svg",
   other: "./assets/icon.svg"
 };
 

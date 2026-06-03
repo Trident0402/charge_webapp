@@ -24,6 +24,7 @@ export function renderSettingsPage() {
           <div class="metric"><span>貨幣</span><strong>${data.settings.currency}</strong></div>
           <div class="metric"><span>帳戶數</span><strong>${data.accounts.length}</strong></div>
           <div class="metric"><span>股票市價</span><strong>${data.stockPrices.length}</strong></div>
+          <div class="metric"><span>幣價紀錄</span><strong>${data.cryptoPrices.length}</strong></div>
         </div>
       </div>
     `

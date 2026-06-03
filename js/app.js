@@ -2,6 +2,7 @@ import { getAccountDisplayValue, getCashAccountTotal, renderAccountDetail, bindA
 import { renderExpectedIncomePage, getExpectedIncomeSummary } from "./expected-income.js";
 import { renderMonthlyReportPage } from "./monthly-report.js";
 import { renderSettingsPage } from "./settings.js";
+import { getAllCryptoMarketValue, bindCryptoForms } from "./crypto.js";
 import { getAllStockMarketValue } from "./stocks.js";
 import { bindStockForms } from "./stocks.js";
 import { bindTransactionForms, openTransactionForm, openTransferForm } from "./transactions.js";
@@ -19,6 +20,9 @@ import {
 
 window.currentAccountId = null;
 let currentView = "home";
+let activeAccountType = "";
+
+const ACCOUNT_TYPE_ORDER = ["bank", "linepay", "wallet", "stock", "crypto", "other"];
 
 function showView(view, options = {}) {
   $$(".view").forEach((element) => element.classList.remove("is-active"));
@@ -38,6 +42,7 @@ function renderHome() {
   window.currentAccountId = null;
   const cashTotal = getCashAccountTotal();
   const stockTotal = getAllStockMarketValue();
+  const cryptoTotal = getAllCryptoMarketValue();
   const expected = getExpectedIncomeSummary();
   const hideAmounts = Boolean(data.settings.hideAssetAmounts);
   const money = (value) => (hideAmounts ? "***" : formatCurrency(value));
@@ -49,7 +54,7 @@ function renderHome() {
         <div class="home-total-row">
           <div>
             <span>總資產</span>
-            <strong>${money(cashTotal + stockTotal)}</strong>
+            <strong>${money(cashTotal + stockTotal + cryptoTotal)}</strong>
           </div>
           <button class="visibility-button" id="toggleAssetVisibilityButton" type="button" aria-label="${hideAmounts ? "顯示資產金額" : "隱藏資產金額"}">
             <span class="eye-icon ${hideAmounts ? "is-closed" : ""}" aria-hidden="true"></span>
@@ -58,8 +63,8 @@ function renderHome() {
         <div class="home-metric-grid">
           <div class="mini-metric"><span>現金類</span><strong>${money(cashTotal)}</strong></div>
           <div class="mini-metric"><span>股票市值</span><strong>${money(stockTotal)}</strong></div>
+          <div class="mini-metric"><span>虛擬貨幣</span><strong>${money(cryptoTotal)}</strong></div>
           <div class="mini-metric"><span>預期入帳總額</span><strong>${money(expected.total)}</strong></div>
-          <div class="mini-metric"><span>尚未入帳</span><strong>${money(expected.pending)}</strong></div>
         </div>
       </div>
     `
@@ -72,6 +77,7 @@ function renderHome() {
   });
 
   setHtml("#accountFolderList", renderAccountFolders());
+  bindAccountTypeTabs();
   bindAccountFolderClicks();
   showView("home", {
     title: "資產總覽",
@@ -83,25 +89,69 @@ function renderHome() {
 function renderAccountFolders() {
   if (!data.accounts.length) return `<div class="empty-state">還沒有帳戶，先新增一個資產帳戶吧</div>`;
 
-  return data.accounts
-    .map(
-      (account) => {
-        const iconSrc = ACCOUNT_ICONS[account.type] || ACCOUNT_ICONS.other;
-        return `
-        <button class="account-card" type="button" data-account-id="${account.id}">
-          <span class="account-card-icon" aria-hidden="true">
-            <img src="${iconSrc}" alt="" />
-          </span>
-          <div>
-            <h3>${escapeHtml(account.name)}</h3>
-            <p>${ACCOUNT_TYPES[account.type] || "帳戶"}</p>
-          </div>
-          <strong>${formatCurrency(getAccountDisplayValue(account))}</strong>
-        </button>
-      `;
-      }
-    )
-    .join("");
+  const accountTypes = getExistingAccountTypes();
+  if (!accountTypes.includes(activeAccountType)) activeAccountType = accountTypes[0] || "";
+  const visibleAccounts = data.accounts.filter((account) => account.type === activeAccountType);
+
+  return `
+    ${renderAccountTypeTabs(accountTypes)}
+    <div class="account-card-grid">
+      ${visibleAccounts.map(renderAccountCard).join("")}
+    </div>
+  `;
+}
+
+function getExistingAccountTypes() {
+  const types = new Set(data.accounts.map((account) => account.type || "other"));
+  return ACCOUNT_TYPE_ORDER.filter((type) => types.has(type)).concat(
+    Array.from(types)
+      .filter((type) => !ACCOUNT_TYPE_ORDER.includes(type))
+      .sort()
+  );
+}
+
+function renderAccountTypeTabs(accountTypes) {
+  if (accountTypes.length <= 1) return "";
+  return `
+    <div class="account-type-tabs" aria-label="資產帳戶類別">
+      ${accountTypes
+        .map(
+          (type) => `
+            <button class="${type === activeAccountType ? "is-active" : ""}" type="button" data-account-type-tab="${escapeHtml(type)}">
+              ${escapeHtml(ACCOUNT_TYPES[type] || "其他")}
+            </button>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderAccountCard(account) {
+  const iconSrc = ACCOUNT_ICONS[account.type] || ACCOUNT_ICONS.other;
+  return `
+    <button class="account-card" type="button" data-account-id="${account.id}">
+      <span class="account-card-icon" aria-hidden="true">
+        <img src="${iconSrc}" alt="" />
+      </span>
+      <div>
+        <h3>${escapeHtml(account.name)}</h3>
+        <p>${ACCOUNT_TYPES[account.type] || "帳戶"}</p>
+      </div>
+      <strong class="account-card-amount">${formatCurrency(getAccountDisplayValue(account))}</strong>
+    </button>
+  `;
+}
+
+function bindAccountTypeTabs() {
+  $$("[data-account-type-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      activeAccountType = button.dataset.accountTypeTab;
+      setHtml("#accountFolderList", renderAccountFolders());
+      bindAccountTypeTabs();
+      bindAccountFolderClicks();
+    });
+  });
 }
 
 function bindAccountFolderClicks() {
@@ -171,6 +221,7 @@ function init() {
   bindAccountForm();
   bindTransactionForms();
   bindStockForms();
+  bindCryptoForms();
   renderHome();
   registerServiceWorker();
 }

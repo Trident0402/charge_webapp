@@ -281,7 +281,7 @@ export function openTransferForm(accountId, transferId = "") {
     $("#transferReason").value = transferOut.note || "";
   }
 
-  const targetAccounts = data.accounts.filter((account) => account.id !== fromAccountId && account.type !== "stock");
+  const targetAccounts = data.accounts.filter((account) => account.id !== fromAccountId && !["stock", "crypto"].includes(account.type));
   $("#transferToAccountId").innerHTML = targetAccounts
     .map((account) => `<option value="${account.id}" ${account.id === selectedToAccountId ? "selected" : ""}>${escapeHtml(account.name)}</option>`)
     .join("");

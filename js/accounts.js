@@ -1,4 +1,5 @@
 import { data, saveData } from "./storage.js";
+import { renderCryptoAccount, bindCryptoButtons, getCryptoAccountSummary } from "./crypto.js";
 import { renderStockAccount, bindStockButtons, getStockAccountSummary } from "./stocks.js";
 import { bindTransactionListActions, renderTransactionList } from "./transactions.js";
 import {
@@ -50,6 +51,8 @@ export function deleteAccount(accountId) {
   data.transactions = data.transactions.filter((transaction) => transaction.accountId !== accountId && transaction.relatedAccountId !== accountId);
   data.stockTrades = data.stockTrades.filter((trade) => trade.accountId !== accountId);
   data.stockPrices = data.stockPrices.filter((price) => price.accountId !== accountId);
+  data.cryptoTrades = data.cryptoTrades.filter((trade) => trade.accountId !== accountId);
+  data.cryptoPrices = data.cryptoPrices.filter((price) => price.accountId !== accountId);
   saveData();
 }
 
@@ -71,12 +74,13 @@ export function getAccountBalance(accountId) {
 
 export function getCashAccountTotal() {
   return data.accounts
-    .filter((account) => account.type !== "stock")
+    .filter((account) => !["stock", "crypto"].includes(account.type))
     .reduce((total, account) => total + getAccountBalance(account.id), 0);
 }
 
 export function getAccountDisplayValue(account) {
   if (account.type === "stock") return getStockAccountSummary(account.id).marketValue;
+  if (account.type === "crypto") return getCryptoAccountSummary(account.id).marketValue;
   return getAccountBalance(account.id);
 }
 
@@ -122,6 +126,9 @@ export function renderAccountDetail(accountId) {
   if (account.type === "stock") {
     setHtml("#accountDetail", renderStockAccount(account));
     bindStockButtons(accountId);
+  } else if (account.type === "crypto") {
+    setHtml("#accountDetail", renderCryptoAccount(account));
+    bindCryptoButtons(accountId);
   } else {
     setHtml("#accountDetail", renderCashAccount(account));
     bindCashButtons(accountId);

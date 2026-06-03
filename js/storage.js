@@ -73,6 +73,8 @@ export function createDefaultData() {
     transactionCategories: [],
     stockTrades: [],
     stockPrices: [],
+    cryptoTrades: [],
+    cryptoPrices: [],
     expectedIncomes: [],
     settings: {
       currency: "TWD",
@@ -92,6 +94,8 @@ function normalizeData(rawData) {
     transactionCategories: Array.isArray(rawData.transactionCategories) ? rawData.transactionCategories : [],
     stockTrades: Array.isArray(rawData.stockTrades) ? rawData.stockTrades : [],
     stockPrices: Array.isArray(rawData.stockPrices) ? rawData.stockPrices : [],
+    cryptoTrades: Array.isArray(rawData.cryptoTrades) ? rawData.cryptoTrades : [],
+    cryptoPrices: Array.isArray(rawData.cryptoPrices) ? rawData.cryptoPrices : [],
     expectedIncomes: Array.isArray(rawData.expectedIncomes) ? rawData.expectedIncomes : [],
     settings: {
       ...defaults.settings,
