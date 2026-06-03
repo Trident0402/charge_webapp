@@ -12,7 +12,7 @@ export const ACCOUNT_ICONS = {
   linepay: "./assets/line.png",
   wallet: "./assets/cash.png",
   stock: "./assets/stock.png",
-  crypto: "./assets/icon.svg",
+  crypto: "./assets/Crypto.png",
   other: "./assets/icon.svg"
 };
 
