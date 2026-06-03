@@ -420,6 +420,43 @@ textarea {
   color: white;
 }
 
+.account-section {
+  display: grid;
+  gap: 10px;
+}
+
+.account-type-tabs {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.account-type-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.account-type-tabs button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.account-type-tabs button.is-active {
+  border-color: transparent;
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 8px 18px rgba(31, 118, 103, 0.16);
+}
+
 .account-card-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -463,10 +500,14 @@ textarea {
   font-size: 12px;
 }
 
-.account-card strong {
+.account-card-amount {
   display: block;
   margin-top: auto;
-  font-size: 16px;
+  align-self: end;
+  justify-self: end;
+  text-align: right;
+  font-size: 19px;
+  line-height: 1.05;
   overflow-wrap: anywhere;
 }
 
@@ -771,7 +812,7 @@ textarea {
 
 .monthly-report-page {
   display: grid;
-  gap: 18px;
+  gap: 0;
 }
 
 .report-segment {
@@ -784,6 +825,44 @@ textarea {
   border-radius: var(--radius);
   background: var(--surface-soft);
   padding: 3px;
+}
+
+.report-subpage {
+  display: grid;
+  gap: 18px;
+  padding-top: 10px;
+}
+
+.report-view-tabs {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.report-view-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.report-view-tabs button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.report-view-tabs button.is-active {
+  border-color: transparent;
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 8px 18px rgba(31, 118, 103, 0.16);
 }
 
 .report-segment button,
@@ -837,6 +916,73 @@ textarea {
 .report-period-grid button {
   border-radius: 999px;
   border: 1px solid var(--line);
+}
+
+.report-menu {
+  position: relative;
+  justify-self: start;
+  z-index: 2;
+}
+
+.report-menu summary {
+  display: inline-grid;
+  grid-template-columns: 20px auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+}
+
+.report-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.report-menu summary span {
+  color: var(--primary-dark);
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.report-menu summary strong {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.report-menu-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  display: grid;
+  gap: 4px;
+  min-width: 190px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 14px 30px rgba(26, 44, 40, 0.14);
+}
+
+.report-menu-list button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.report-menu-list button.is-active {
+  background: var(--surface-soft);
+  color: var(--primary-dark);
 }
 
 .report-custom-range {
@@ -971,6 +1117,122 @@ textarea {
   white-space: nowrap;
 }
 
+.report-calendar-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.report-calendar-summary .mini-metric {
+  min-height: 64px;
+}
+
+.report-calendar {
+  padding: 10px;
+}
+
+.report-calendar-weekdays,
+.report-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.report-calendar-weekdays {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.report-calendar-day {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-height: 68px;
+  padding: 6px 4px;
+  border-radius: 7px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.15;
+  overflow: hidden;
+}
+
+.report-calendar-day.has-record.is-positive {
+  background: #e5f8ef;
+}
+
+.report-calendar-day.has-record.is-negative {
+  background: #fff0f4;
+}
+
+.report-calendar-day.is-empty {
+  background: transparent;
+}
+
+.report-calendar-day strong {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.report-calendar-day span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-income {
+  color: var(--income);
+}
+
+.calendar-expense {
+  color: var(--expense);
+}
+
+.calendar-net {
+  margin-top: 1px;
+  font-weight: 900;
+}
+
+.report-calendar-list-row {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.report-calendar-list-row:last-child {
+  border-bottom: 0;
+}
+
+.report-calendar-list-row > span {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.report-calendar-list-row div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.report-calendar-list-row small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.report-calendar-list-row strong {
+  white-space: nowrap;
+}
+
 @media (min-width: 720px) {
   .account-card-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -998,6 +1260,25 @@ textarea {
   .report-segment button,
   .report-period-grid button {
     font-size: 16px;
+  }
+
+  .report-calendar-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .report-calendar {
+    padding: 8px;
+  }
+
+  .report-calendar-weekdays,
+  .report-calendar-grid {
+    gap: 4px;
+  }
+
+  .report-calendar-day {
+    min-height: 62px;
+    padding: 5px 3px;
+    font-size: 9px;
   }
 
   .report-legend {
