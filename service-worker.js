@@ -17,6 +17,7 @@ const APP_SHELL = [
   "./assets/cash.png",
   "./assets/line.png",
   "./css/style.css",
+  "./css/pdf-export.css",
   "./js/app.js",
   "./js/storage.js",
   "./js/accounts.js",
@@ -25,6 +26,8 @@ const APP_SHELL = [
   "./js/crypto.js",
   "./js/expected-income.js",
   "./js/monthly-report.js",
+  "./js/pdf-report-data.js",
+  "./js/pdf-export.js",
   "./js/settings.js",
   "./js/version.js",
   "./js/utils.js"
