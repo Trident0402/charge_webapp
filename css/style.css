@@ -269,6 +269,22 @@ label {
   font-weight: 700;
 }
 
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 10px;
+  background: var(--surface-soft);
+  border-radius: var(--radius);
+}
+
+.checkbox-label input {
+  width: 20px;
+  min-height: 20px;
+  margin: 0;
+}
+
 input,
 select,
 textarea {
@@ -338,6 +354,19 @@ textarea {
   color: white;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.home-summary-card.is-liability {
+  background: #4b5563;
+  color: white;
+}
+
+.home-summary-card.is-liability .visibility-button {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.14);
+  color: white;
 }
 
 .home-total-row {
@@ -412,12 +441,37 @@ textarea {
   background: rgba(255, 255, 255, 0.12);
 }
 
+.home-summary-card.is-liability .mini-metric {
+  background: rgba(255, 255, 255, 0.14);
+}
+
 .home-summary-card .mini-metric span {
   color: rgba(255, 255, 255, 0.82);
 }
 
+.home-summary-card.is-liability .mini-metric span {
+  color: rgba(255, 255, 255, 0.78);
+}
+
 .home-summary-card .mini-metric strong {
   color: white;
+}
+
+.home-summary-card.is-liability .mini-metric strong {
+  color: white;
+}
+
+#view-home.is-liability-mode .primary-button {
+  background: #4b5563;
+}
+
+#view-home.is-liability-mode .account-type-tabs button.is-active {
+  background: #4b5563;
+  box-shadow: 0 8px 18px rgba(75, 85, 99, 0.16);
+}
+
+#view-home.is-liability-mode .account-card-icon {
+  background: #f1f3f5;
 }
 
 .account-section {
@@ -511,11 +565,53 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.account-card-debt {
+  display: grid;
+  gap: 5px;
+  margin-top: auto;
+  align-self: end;
+}
+
+.account-card-debt span {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.account-card-debt strong {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.1;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
 .account-detail-header {
   position: relative;
   display: grid;
   gap: 10px;
   margin-bottom: 12px;
+}
+
+.account-detail-header.is-liability-detail .metric,
+.account-detail-header.is-liability-detail .account-type-pill,
+.account-detail-header.is-liability-detail .secondary-button,
+.account-detail-header.is-liability-detail .action-sheet-item {
+  background: #f1f3f5;
+}
+
+.account-detail-header.is-liability-detail .secondary-button,
+.account-detail-header.is-liability-detail .action-sheet-item {
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.account-detail-header.is-liability-detail .fab-button {
+  background: #4b5563;
+  box-shadow: 0 12px 24px rgba(75, 85, 99, 0.28);
 }
 
 .fab-button {
@@ -897,6 +993,14 @@ textarea {
   gap: 0;
 }
 
+.report-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
 .report-segment {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -917,7 +1021,9 @@ textarea {
 
 .report-view-tabs {
   display: flex;
+  flex: 1 1 auto;
   gap: 8px;
+  min-width: 0;
   padding-bottom: 2px;
   overflow-x: auto;
   scrollbar-width: none;
@@ -1003,6 +1109,7 @@ textarea {
 .report-menu {
   position: relative;
   justify-self: start;
+  flex: 0 0 auto;
   z-index: 2;
 }
 
@@ -1040,10 +1147,11 @@ textarea {
 .report-menu-list {
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
+  right: 0;
   display: grid;
   gap: 4px;
   min-width: 190px;
+  max-width: min(82vw, 280px);
   padding: 6px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -1313,6 +1421,460 @@ textarea {
 
 .report-calendar-list-row strong {
   white-space: nowrap;
+}
+
+.annual-year-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.annual-year-row strong {
+  min-width: 120px;
+  text-align: center;
+  font-size: 18px;
+}
+
+.annual-hero-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  color: white;
+  background: linear-gradient(135deg, #265f70, #4b5563);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.annual-hero-card > span {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.annual-hero-card > strong {
+  font-size: 30px;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.annual-hero-card p {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.annual-hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.annual-hero-metrics button {
+  min-width: 0;
+  padding: 10px;
+  text-align: left;
+  color: white;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.annual-hero-metrics span,
+.annual-entry-card span,
+.annual-income-total span,
+.annual-income-grid span,
+.annual-month-details span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.annual-hero-metrics button span {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.annual-hero-metrics strong {
+  display: block;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.annual-entry-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.annual-entry-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px;
+  min-height: 74px;
+  padding: 12px;
+  text-align: left;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.annual-entry-card::after {
+  content: none;
+}
+
+.annual-entry-card > span:not(.annual-entry-arrow),
+.annual-entry-card > strong,
+.annual-entry-card > small {
+  grid-column: 1;
+}
+
+.annual-entry-arrow {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+  justify-self: end;
+  color: var(--muted);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.annual-entry-card strong {
+  font-size: 16px;
+}
+
+.annual-entry-card small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.annual-page-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.annual-page-header h2 {
+  font-size: 18px;
+}
+
+.annual-page-header p {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.annual-chart-mode-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.annual-chart-mode-row button {
+  flex: 1;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.annual-chart-mode-row button.is-active {
+  color: white;
+  background: var(--primary);
+  border-color: transparent;
+}
+
+.annual-chart-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.annual-cashflow-chart {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(18px, 1fr));
+  gap: 4px;
+  align-items: end;
+  min-height: 220px;
+  padding-top: 54px;
+}
+
+.annual-zero-line {
+  position: absolute;
+  right: 0;
+  top: 76px;
+  left: 0;
+  height: 1px;
+  background: #d8e1de;
+}
+
+.annual-cashflow-chart button {
+  position: relative;
+  display: grid;
+  align-items: end;
+  gap: 5px;
+  min-width: 0;
+  min-height: 178px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.annual-cashflow-chart button.is-active small {
+  color: var(--primary-dark);
+  font-weight: 900;
+}
+
+.annual-bar-pair {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 2px;
+  height: 112px;
+}
+
+.annual-bar-pair i {
+  position: relative;
+  display: block;
+  width: 7px;
+  border-radius: 999px 999px 2px 2px;
+}
+
+.annual-bar-pair i em {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  color: var(--muted);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  transform: translateX(-50%) rotate(-35deg);
+  transform-origin: center;
+}
+
+.income-bar {
+  background: #36a06f;
+}
+
+.expense-bar {
+  background: #d85c5c;
+}
+
+.annual-net-marker {
+  position: absolute;
+  right: 50%;
+  top: calc(76px - var(--net-offset));
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  z-index: 1;
+  transform: translateX(50%);
+}
+
+.annual-net-marker i {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.annual-net-marker b {
+  display: block;
+  padding: 1px 3px;
+  background: rgba(255, 255, 255, 0.86);
+  border-radius: 4px;
+  font-size: 9px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.annual-net-marker.is-zero {
+  color: #a7b0ad;
+  opacity: 0.45;
+}
+
+.annual-cashflow-chart small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.annual-line-chart {
+  width: 100%;
+  min-height: 210px;
+}
+
+.annual-line-chart polyline {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.asset-line,
+.asset-point {
+  stroke: #265f70;
+  fill: #265f70;
+}
+
+.debt-line,
+.debt-point {
+  stroke: #808891;
+  fill: #808891;
+}
+
+.annual-line-chart text {
+  font-size: 9px;
+  font-weight: 900;
+  paint-order: stroke;
+  stroke: white;
+  stroke-width: 3px;
+  text-anchor: middle;
+}
+
+.asset-label {
+  fill: #265f70;
+}
+
+.debt-label {
+  fill: #69727b;
+}
+
+.annual-selected-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface-soft);
+  border-radius: var(--radius);
+}
+
+.annual-selected-summary strong {
+  grid-column: 1 / -1;
+}
+
+.annual-selected-summary span {
+  font-size: 12px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.annual-income-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.annual-income-total strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 26px;
+}
+
+.annual-income-bar {
+  display: flex;
+  height: 18px;
+  overflow: hidden;
+  background: #edf1f0;
+  border-radius: 999px;
+}
+
+.salary-part {
+  background: #2f8f68;
+}
+
+.passive-part {
+  background: #f0c54a;
+}
+
+.annual-income-grid,
+.annual-month-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.annual-income-grid div,
+.annual-month-details div {
+  padding: 10px;
+  background: var(--surface-soft);
+  border-radius: var(--radius);
+}
+
+.annual-income-grid strong,
+.annual-month-details strong {
+  display: block;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.annual-income-panel p {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.annual-month-list {
+  display: grid;
+  gap: 10px;
+}
+
+.annual-month-card {
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.annual-month-card.is-current {
+  border-color: var(--primary);
+}
+
+.annual-month-card > button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+}
+
+.annual-month-card > button span {
+  font-weight: 900;
+}
+
+.annual-month-card > button strong {
+  justify-self: end;
+}
+
+.annual-month-card > button small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.annual-month-details {
+  padding: 0 12px 12px;
 }
 
 @media (min-width: 720px) {
