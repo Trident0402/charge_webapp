@@ -182,7 +182,18 @@ export function getCryptoHoldings(accountId) {
         holding.latestBuyPriceUsd = trade.priceUsd;
         holding.latestBuyFxRate = trade.fxRate;
       }
-    } else {
+    } else if (trade.type === "profit") {
+      const receivedValueTwd = trade.priceUsd * trade.fxRate;
+      holding.totalCost += receivedValueTwd;
+      holding.quantity += trade.quantity;
+      holding.name = trade.name || holding.name;
+      holding.symbol = holding.symbol || trade.symbol;
+      if (!holding.latestBuyDate || String(trade.date).localeCompare(holding.latestBuyDate) >= 0) {
+        holding.latestBuyDate = trade.date;
+        holding.latestBuyPriceUsd = trade.quantity > 0 ? trade.priceUsd / trade.quantity : trade.priceUsd;
+        holding.latestBuyFxRate = trade.fxRate;
+      }
+    } else if (trade.type === "sell") {
       const sellQuantity = Math.min(trade.quantity, holding.quantity);
       holding.quantity -= sellQuantity;
       holding.totalCost = holding.averageCost * holding.quantity;
@@ -247,6 +258,7 @@ export function renderCryptoAccount(account) {
           <h3>新增虛擬貨幣紀錄</h3>
           <button class="action-sheet-item" id="addCryptoBuyButton" type="button">買入</button>
           <button class="action-sheet-item" id="addCryptoSellButton" type="button">賣出</button>
+          <button class="action-sheet-item" id="addCryptoProfitButton" type="button">純利潤</button>
           <button class="action-sheet-item" id="addCryptoPriceButton" type="button">新增市價</button>
         </div>
       </div>
@@ -307,7 +319,7 @@ function renderCryptoTradeList(accountId) {
                   <div class="item-title">${STOCK_TRADE_TYPES[trade.type]} ${escapeHtml(trade.name)}</div>
                   <div class="item-meta">${escapeHtml(trade.date)} · ${escapeHtml(trade.symbol)} · ${formatNumber(trade.quantity, 8)} · 匯率 ${formatNumber(trade.fxRate, 4)}</div>
                 </div>
-                <strong>${formatUsd(trade.priceUsd)}</strong>
+                <strong>${formatUsd(trade.type === "profit" ? trade.priceUsd - trade.feeUsd : trade.priceUsd)}</strong>
               </div>
             </article>
           `
@@ -355,6 +367,10 @@ export function bindCryptoButtons(accountId) {
   $("#addCryptoSellButton")?.addEventListener("click", () => {
     closeSheet();
     openCryptoTradeForm(accountId, "sell");
+  });
+  $("#addCryptoProfitButton")?.addEventListener("click", () => {
+    closeSheet();
+    openCryptoTradeForm(accountId, "profit");
   });
   $("#addCryptoPriceButton")?.addEventListener("click", () => {
     closeSheet();
@@ -409,8 +425,8 @@ export function openCryptoTradeForm(accountId, type = "buy", tradeId = "") {
   }
 
   requestView("crypto-trade-form", {
-    title: tradeId ? "修改虛擬貨幣交易" : type === "buy" ? "新增買入" : "新增賣出",
-    subtitle: "以美元計價，換算台幣成本",
+    title: tradeId ? "修改虛擬貨幣交易" : type === "buy" ? "新增買入" : type === "sell" ? "新增賣出" : "新增純利潤",
+    subtitle: type === "profit" ? "記錄收益並加入幣種庫存" : "以美元計價，換算台幣成本",
     showBack: true
   });
 }
@@ -471,7 +487,7 @@ export function bindCryptoForms() {
         symbol: requireText($("#cryptoSymbol").value, "幣種代號"),
         name: requireText($("#cryptoName").value, "幣種名稱"),
         quantity: requireNumber($("#cryptoQuantity").value, "數量", { positive: true }),
-        priceUsd: requireNumber($("#cryptoPriceUsd").value, "美元單價", { positive: true }),
+        priceUsd: requireNumber($("#cryptoPriceUsd").value, $("#cryptoTradeType").value === "profit" ? "美元金額" : "美元單價", { positive: true }),
         fxRate: requireNumber($("#cryptoFxRate").value, "台幣美金匯率", { positive: true }),
         feeUsd: requireNumber($("#cryptoFeeUsd").value || 0, "美元手續費"),
         date: requireDate($("#cryptoTradeDate").value)

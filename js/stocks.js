@@ -117,7 +117,7 @@ export function getKnownStocks() {
 export function getLatestStockPrice(accountId, holding) {
   const aliases = [...(holding.symbols || []), ...(holding.names || []), holding.symbol, holding.name].map(normalizeStockText).filter(Boolean);
   const prices = data.stockPrices
-    .filter((price) => price.accountId === accountId && aliases.includes(normalizeStockText(price.symbol)))
+    .filter((price) => aliases.includes(normalizeStockText(price.symbol)))
     .sort((a, b) => {
       const dateCompare = String(b.date).localeCompare(String(a.date));
       if (dateCompare !== 0) return dateCompare;
@@ -246,7 +246,7 @@ export function renderStockAccount(account) {
     ${renderStockHoldings(summary.holdings)}
     <div class="section-heading"><h2>買賣紀錄</h2></div>
     ${renderStockTradeList(account.id)}
-    <div class="section-heading"><h2>市價紀錄</h2></div>
+    <div class="section-heading"><h2>共用市價紀錄</h2></div>
     ${renderStockPriceList(account.id)}
   `;
 }
@@ -307,9 +307,9 @@ function renderStockTradeList(accountId) {
   `;
 }
 
-function renderStockPriceList(accountId) {
-  const prices = sortByDateDesc(data.stockPrices.filter((price) => price.accountId === accountId));
-  if (!prices.length) return `<div class="empty-state">還沒有每日市價紀錄</div>`;
+function renderStockPriceList() {
+  const prices = sortByDateDesc(data.stockPrices);
+  if (!prices.length) return `<div class="empty-state">還沒有共用市價紀錄</div>`;
   return `
     <div class="list-stack">
       ${prices

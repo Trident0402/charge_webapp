@@ -90,6 +90,35 @@ export function createTransaction(input) {
   return transaction;
 }
 
+function createExpenseTransferFee(input) {
+  const amount = Number(input.transferFeeAmount) || 0;
+  if (input.type !== "expense" || !input.includeTransferFee || amount <= 0) return null;
+
+  const feeTransaction = {
+    id: createId("txn"),
+    accountId: input.accountId,
+    type: "expense",
+    amount,
+    category: "轉帳手續費",
+    date: input.date,
+    note: "支出自動新增",
+    feeForTransactionId: input.sourceTransactionId || "",
+    createdAt: new Date().toISOString()
+  };
+  data.transactions.push(feeTransaction);
+  saveData();
+  return feeTransaction;
+}
+
+export function createTransactionWithOptionalTransferFee(input) {
+  const transaction = createTransaction(input);
+  createExpenseTransferFee({
+    ...input,
+    sourceTransactionId: transaction.id
+  });
+  return transaction;
+}
+
 export function updateTransaction(transactionId, input) {
   const transaction = data.transactions.find((item) => item.id === transactionId);
   if (!transaction) return null;
@@ -112,6 +141,9 @@ export function createTransfer(input) {
   const transferId = createId("transfer");
   const now = new Date().toISOString();
   const reason = input.reason || "";
+  const fromAccount = data.accounts.find((account) => account.id === input.fromAccountId);
+  const toAccount = data.accounts.find((account) => account.id === input.toAccountId);
+  const fee = getAutoTransferFee(fromAccount, toAccount);
 
   data.transactions.push(
     {
@@ -140,8 +172,44 @@ export function createTransfer(input) {
     }
   );
 
+  if (fee.amount > 0) {
+    data.transactions.push({
+      id: createId("txn"),
+      accountId: input.fromAccountId,
+      type: "expense",
+      amount: fee.amount,
+      category: fee.category,
+      date: input.date,
+      note: fee.note,
+      feeForTransferId: transferId,
+      relatedAccountId: input.toAccountId,
+      createdAt: now
+    });
+  }
+
   saveData();
   return transferId;
+}
+
+function getAutoTransferFee(fromAccount, toAccount) {
+  if (!fromAccount || fromAccount.type !== "bank" || !fromAccount.feeSettingsEnabled) {
+    return { amount: 0, category: "", note: "" };
+  }
+  if (toAccount?.type === "bank") {
+    return {
+      amount: Number(fromAccount.bankTransferFee) || 0,
+      category: "轉帳手續費",
+      note: "轉帳自動新增"
+    };
+  }
+  if (toAccount?.type === "wallet") {
+    return {
+      amount: Number(fromAccount.walletWithdrawalFee) || 0,
+      category: "提領手續費",
+      note: "轉帳自動新增"
+    };
+  }
+  return { amount: 0, category: "", note: "" };
 }
 
 export function updateTransfer(transferId, input) {
@@ -189,15 +257,58 @@ export function getTransactionsByAccountMonth(accountId, month) {
   });
 }
 
-export function renderTransactionList(accountId, month) {
+function isLiabilityAccount(accountId) {
+  return data.accounts.find((account) => account.id === accountId)?.type === "liability";
+}
+
+function getTransactionTypeLabel(type, liability = false) {
+  if (liability && type === "income") return "借款";
+  if (liability && type === "expense") return "還款";
+  return TRANSACTION_TYPES[type] || type;
+}
+
+function setTransactionTypeLabels(liability = false) {
+  const incomeOption = $('#transactionType option[value="income"]');
+  const expenseOption = $('#transactionType option[value="expense"]');
+  if (incomeOption) incomeOption.textContent = liability ? "借款" : "收入";
+  if (expenseOption) expenseOption.textContent = liability ? "還款" : "支出";
+}
+
+function getAccountTransferFee(accountId) {
+  const account = data.accounts.find((item) => item.id === accountId);
+  return Number(account?.bankTransferFee) || 0;
+}
+
+function updateTransactionFeeSettingsVisibility() {
+  const transactionId = $("#transactionId")?.value || "";
+  const type = $("#transactionType")?.value;
+  const showSettings = !transactionId && type === "expense";
+  const includeFee = Boolean($("#includeTransferFee")?.checked);
+  $("#transactionFeeSettings")?.classList.toggle("is-hidden", !showSettings);
+  $("#transactionFeeAmountField")?.classList.toggle("is-hidden", !showSettings || !includeFee);
+}
+
+function getSignedTransactionAmount(transaction, liability = false) {
+  if (liability) {
+    if (["income", "transfer-out"].includes(transaction.type)) return -transaction.amount;
+    if (["expense", "transfer-in"].includes(transaction.type)) return transaction.amount;
+    return transaction.amount;
+  }
+  return ["expense", "transfer-out"].includes(transaction.type) ? -transaction.amount : transaction.amount;
+}
+
+export function renderTransactionList(accountId, month, options = {}) {
   const transactions = getTransactionsByAccountMonth(accountId, month);
-  if (!transactions.length) return `<div class="empty-state">這個月份還沒有收入或支出紀錄</div>`;
+  const liability = Boolean(options.liability);
+  if (!transactions.length) {
+    return `<div class="empty-state">${liability ? "這個月份還沒有借款或還款紀錄" : "這個月份還沒有收入或支出紀錄"}</div>`;
+  }
 
   return `
     <div class="list-stack">
       ${transactions
         .map((transaction) => {
-          const signedAmount = ["expense", "transfer-out"].includes(transaction.type) ? -transaction.amount : transaction.amount;
+          const signedAmount = getSignedTransactionAmount(transaction, liability);
           const relatedAccount = transaction.relatedAccountId
             ? data.accounts.find((account) => account.id === transaction.relatedAccountId)
             : null;
@@ -209,7 +320,7 @@ export function renderTransactionList(accountId, month) {
             <article class="list-card interactive-card" ${editAttribute} role="button" tabindex="0">
               <div class="item-row">
                 <div>
-                  <div class="item-title">${TRANSACTION_TYPES[transaction.type] || transaction.type}</div>
+                  <div class="item-title">${getTransactionTypeLabel(transaction.type, liability)}</div>
                   <div class="item-meta">
                     ${escapeHtml(transaction.date)}
                     ${relatedText}
@@ -230,14 +341,19 @@ export function renderTransactionList(accountId, month) {
 export function openTransactionForm(accountId, type = "income") {
   $("#transactionForm").reset();
   updateTransactionCategoryDatalist();
+  const liability = isLiabilityAccount(accountId);
+  setTransactionTypeLabels(liability);
   $("#transactionId").value = "";
   $("#transactionAccountId").value = accountId;
   $("#deleteTransactionButton").classList.add("is-hidden");
   $("#transactionType").value = type;
   $("#transactionDate").value = todayString();
+  $("#includeTransferFee").checked = false;
+  $("#transactionTransferFee").value = getAccountTransferFee(accountId);
+  updateTransactionFeeSettingsVisibility();
   requestView("transaction-form", {
-    title: type === "expense" ? "新增支出" : "新增收入",
-    subtitle: "紀錄帳戶收支",
+    title: liability ? (type === "expense" ? "新增還款" : "新增借款") : type === "expense" ? "新增支出" : "新增收入",
+    subtitle: liability ? "紀錄負債借還款" : "紀錄帳戶收支",
     showBack: true
   });
 }
@@ -247,6 +363,8 @@ export function openEditTransactionForm(transactionId) {
   if (!transaction) return;
   $("#transactionForm").reset();
   updateTransactionCategoryDatalist();
+  const liability = isLiabilityAccount(transaction.accountId);
+  setTransactionTypeLabels(liability);
   $("#transactionId").value = transaction.id;
   $("#transactionAccountId").value = transaction.accountId;
   $("#transactionType").value = transaction.type;
@@ -255,9 +373,12 @@ export function openEditTransactionForm(transactionId) {
   $("#transactionCategory").value = transaction.category || "";
   $("#transactionNote").value = transaction.note || "";
   $("#deleteTransactionButton").classList.remove("is-hidden");
+  $("#includeTransferFee").checked = false;
+  $("#transactionTransferFee").value = getAccountTransferFee(transaction.accountId);
+  updateTransactionFeeSettingsVisibility();
   requestView("transaction-form", {
-    title: "修改紀錄",
-    subtitle: "更新帳戶收支",
+    title: liability ? "修改負債紀錄" : "修改紀錄",
+    subtitle: liability ? "更新負債借還款" : "更新帳戶收支",
     showBack: true
   });
 }
@@ -316,6 +437,9 @@ export function bindTransactionListActions(accountId) {
 }
 
 export function bindTransactionForms() {
+  $("#transactionType")?.addEventListener("change", updateTransactionFeeSettingsVisibility);
+  $("#includeTransferFee")?.addEventListener("change", updateTransactionFeeSettingsVisibility);
+
   $("#transactionForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
     try {
@@ -329,8 +453,15 @@ export function bindTransactionForms() {
         category: $("#transactionCategory").value.trim(),
         note: $("#transactionNote").value.trim()
       };
-      if (transactionId) updateTransaction(transactionId, input);
-      else createTransaction(input);
+      if (transactionId) {
+        updateTransaction(transactionId, input);
+      } else {
+        createTransactionWithOptionalTransferFee({
+          ...input,
+          includeTransferFee: $("#includeTransferFee").checked,
+          transferFeeAmount: $("#transactionTransferFee").value
+        });
+      }
       requestAccountDetail(accountId);
     } catch (error) {
       showError(error);

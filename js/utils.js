@@ -4,6 +4,7 @@ export const ACCOUNT_TYPES = {
   wallet: "錢包",
   stock: "股票帳戶",
   crypto: "虛擬貨幣帳戶",
+  liability: "負債帳戶",
   other: "其他"
 };
 
@@ -13,6 +14,7 @@ export const ACCOUNT_ICONS = {
   wallet: "./assets/cash.png",
   stock: "./assets/stock.png",
   crypto: "./assets/Crypto.png",
+  liability: "./assets/icon.svg",
   other: "./assets/icon.svg"
 };
 
@@ -26,7 +28,8 @@ export const TRANSACTION_TYPES = {
 
 export const STOCK_TRADE_TYPES = {
   buy: "買入",
-  sell: "賣出"
+  sell: "賣出",
+  profit: "純利潤"
 };
 
 export function $(selector, root = document) {

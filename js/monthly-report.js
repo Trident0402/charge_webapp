@@ -1,18 +1,26 @@
 import { data } from "./storage.js";
-import { $, amountClass, escapeHtml, formatCurrency, formatPercent, requestView, setHtml } from "./utils.js";
+import { $, amountClass, escapeHtml, formatCurrency, formatNumber, formatPercent, requestView, setHtml } from "./utils.js";
 
 const REPORT_COLORS = ["#e53670", "#f5cc4e", "#fb9843", "#2faf6a", "#55c2df", "#3177df", "#9659df", "#8b8b8b"];
 const UNCATEGORIZED_LABEL = "未分類";
 
 const reportState = {
-  view: "chart",
+  view: "calendar",
   mode: "expense",
-  calendarMode: "cash-flow",
+  calendarMode: "daily-profit",
   period: "month",
   anchorDate: new Date(),
   customStartDate: toDateInputValue(monthStart(new Date())),
-  customEndDate: toDateInputValue(monthEnd(new Date()))
+  customEndDate: toDateInputValue(monthEnd(new Date())),
+  annualPage: "home",
+  annualChartMode: "cashflow",
+  selectedAnnualMonth: new Date().getMonth(),
+  expandedAnnualMonths: []
 };
+
+function isLiabilityTransaction(transaction) {
+  return data.accounts.find((account) => account.id === transaction.accountId)?.type === "liability";
+}
 
 function padNumber(value) {
   return String(value).padStart(2, "0");
@@ -100,6 +108,7 @@ export function getMonthlyReportSummary(state = reportState) {
   const categoryMap = new Map();
 
   data.transactions.forEach((transaction) => {
+    if (isLiabilityTransaction(transaction)) return;
     if (transaction.type !== state.mode) return;
     const date = parseTransactionDate(transaction.date);
     if (!inDateRange(date, range.start, range.end)) return;
@@ -125,6 +134,244 @@ export function getMonthlyReportSummary(state = reportState) {
 
 function getSecurityKey(item) {
   return `${String(item.symbol || "").trim().toUpperCase()}|${String(item.name || "").trim().toUpperCase()}`;
+}
+
+function getSecurityAliasKey(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function getTransactionsUntil(accountId, endDate) {
+  return data.transactions.filter((transaction) => {
+    if (transaction.accountId !== accountId) return false;
+    const date = parseTransactionDate(transaction.date);
+    return date && date <= endDate;
+  });
+}
+
+function getCashBalanceAt(account, endDate) {
+  return getTransactionsUntil(account.id, endDate).reduce((balance, transaction) => {
+    if (["expense", "transfer-out"].includes(transaction.type)) return balance - Number(transaction.amount || 0);
+    return balance + Number(transaction.amount || 0);
+  }, Number(account.initialBalance) || 0);
+}
+
+function getCashAssetsAt(endDate) {
+  return data.accounts
+    .filter((account) => !["stock", "crypto", "liability"].includes(account.type))
+    .reduce((total, account) => total + getCashBalanceAt(account, endDate), 0);
+}
+
+function getLatestStockPriceAt(holding, endDate) {
+  const aliases = [...(holding.symbols || []), ...(holding.names || []), holding.symbol, holding.name]
+    .map(getSecurityAliasKey)
+    .filter(Boolean);
+  const prices = data.stockPrices
+    .filter((price) => aliases.includes(getSecurityAliasKey(price.symbol)))
+    .filter((price) => {
+      const date = parseTransactionDate(price.date);
+      return date && date <= endDate;
+    })
+    .sort((a, b) => {
+      const dateCompare = String(b.date).localeCompare(String(a.date));
+      if (dateCompare !== 0) return dateCompare;
+      return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+    });
+  return prices[0]?.price ?? null;
+}
+
+function getStockMarketValueAt(endDate) {
+  const holdings = [];
+  const trades = data.stockTrades
+    .filter((trade) => {
+      const date = parseTransactionDate(trade.date);
+      return date && date <= endDate;
+    })
+    .sort((a, b) => {
+      const dateCompare = String(a.date).localeCompare(String(b.date));
+      if (dateCompare !== 0) return dateCompare;
+      return String(a.createdAt || "").localeCompare(String(b.createdAt || ""));
+    });
+
+  trades.forEach((trade) => {
+    let holding = holdings.find((item) => {
+      const symbols = (item.symbols || [item.symbol]).map(getSecurityAliasKey);
+      const names = (item.names || [item.name]).map(getSecurityAliasKey);
+      return symbols.includes(getSecurityAliasKey(trade.symbol)) || names.includes(getSecurityAliasKey(trade.name));
+    });
+    if (!holding) {
+      holding = {
+        symbol: trade.symbol,
+        name: trade.name,
+        symbols: [trade.symbol].filter(Boolean),
+        names: [trade.name].filter(Boolean),
+        shares: 0,
+        totalCost: 0,
+        averageCost: 0,
+        latestBuyPrice: 0,
+        latestBuyDate: ""
+      };
+      holdings.push(holding);
+    }
+    if (trade.symbol && !holding.symbols.map(getSecurityAliasKey).includes(getSecurityAliasKey(trade.symbol))) holding.symbols.push(trade.symbol);
+    if (trade.name && !holding.names.map(getSecurityAliasKey).includes(getSecurityAliasKey(trade.name))) holding.names.push(trade.name);
+
+    const shares = Number(trade.shares) || 0;
+    const price = Number(trade.price) || 0;
+    if (trade.type === "buy") {
+      holding.totalCost += shares * price + Number(trade.fee || 0) + Number(trade.tax || 0);
+      holding.shares += shares;
+      if (!holding.latestBuyDate || String(trade.date).localeCompare(holding.latestBuyDate) >= 0) {
+        holding.latestBuyDate = trade.date;
+        holding.latestBuyPrice = price;
+      }
+    } else if (trade.type === "sell") {
+      const sellShares = Math.min(shares, holding.shares);
+      holding.shares -= sellShares;
+      holding.totalCost = holding.averageCost * holding.shares;
+    }
+    holding.averageCost = holding.shares > 0 ? holding.totalCost / holding.shares : 0;
+  });
+
+  return holdings
+    .filter((holding) => holding.shares > 0)
+    .reduce((total, holding) => {
+      const latestPrice = getLatestStockPriceAt(holding, endDate) ?? holding.latestBuyPrice ?? holding.averageCost;
+      return total + holding.shares * latestPrice;
+    }, 0);
+}
+
+function getLatestCryptoPriceAt(accountId, holding, endDate) {
+  const aliases = [...(holding.symbols || []), ...(holding.names || []), holding.symbol, holding.name]
+    .map(getSecurityAliasKey)
+    .filter(Boolean);
+  const prices = data.cryptoPrices
+    .filter((price) => price.accountId === accountId && aliases.includes(getSecurityAliasKey(price.symbol)))
+    .filter((price) => {
+      const date = parseTransactionDate(price.date);
+      return date && date <= endDate;
+    })
+    .sort((a, b) => {
+      const dateCompare = String(b.date).localeCompare(String(a.date));
+      if (dateCompare !== 0) return dateCompare;
+      return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+    });
+  return prices[0] ? { priceUsd: Number(prices[0].priceUsd) || 0, fxRate: Number(prices[0].fxRate) || 0 } : null;
+}
+
+function getCryptoMarketValueAt(endDate) {
+  const holdings = [];
+  const trades = data.cryptoTrades
+    .filter((trade) => {
+      const date = parseTransactionDate(trade.date);
+      return date && date <= endDate;
+    })
+    .sort((a, b) => {
+      const dateCompare = String(a.date).localeCompare(String(b.date));
+      if (dateCompare !== 0) return dateCompare;
+      return String(a.createdAt || "").localeCompare(String(b.createdAt || ""));
+    });
+
+  trades.forEach((trade) => {
+    const keyPrefix = trade.accountId;
+    let holding = holdings.find((item) => {
+      if (item.accountId !== keyPrefix) return false;
+      const symbols = (item.symbols || [item.symbol]).map(getSecurityAliasKey);
+      const names = (item.names || [item.name]).map(getSecurityAliasKey);
+      return symbols.includes(getSecurityAliasKey(trade.symbol)) || names.includes(getSecurityAliasKey(trade.name));
+    });
+    if (!holding) {
+      holding = {
+        accountId: keyPrefix,
+        symbol: trade.symbol,
+        name: trade.name,
+        symbols: [trade.symbol].filter(Boolean),
+        names: [trade.name].filter(Boolean),
+        quantity: 0,
+        totalCost: 0,
+        averageCost: 0,
+        latestBuyPriceUsd: 0,
+        latestBuyFxRate: 0,
+        latestBuyDate: ""
+      };
+      holdings.push(holding);
+    }
+    if (trade.symbol && !holding.symbols.map(getSecurityAliasKey).includes(getSecurityAliasKey(trade.symbol))) holding.symbols.push(trade.symbol);
+    if (trade.name && !holding.names.map(getSecurityAliasKey).includes(getSecurityAliasKey(trade.name))) holding.names.push(trade.name);
+
+    const quantity = Number(trade.quantity) || 0;
+    const priceUsd = Number(trade.priceUsd) || 0;
+    const fxRate = Number(trade.fxRate) || 0;
+    const feeTwd = (Number(trade.feeUsd) || 0) * fxRate;
+    if (trade.type === "buy") {
+      holding.totalCost += quantity * priceUsd * fxRate + feeTwd;
+      holding.quantity += quantity;
+      holding.latestBuyPriceUsd = priceUsd;
+      holding.latestBuyFxRate = fxRate;
+      holding.latestBuyDate = trade.date;
+    } else if (trade.type === "profit") {
+      holding.totalCost += priceUsd * fxRate;
+      holding.quantity += quantity;
+      holding.latestBuyPriceUsd = quantity > 0 ? priceUsd / quantity : priceUsd;
+      holding.latestBuyFxRate = fxRate;
+      holding.latestBuyDate = trade.date;
+    } else if (trade.type === "sell") {
+      const sellQuantity = Math.min(quantity, holding.quantity);
+      holding.quantity -= sellQuantity;
+      holding.totalCost = holding.averageCost * holding.quantity;
+    }
+    holding.averageCost = holding.quantity > 0 ? holding.totalCost / holding.quantity : 0;
+  });
+
+  return holdings
+    .filter((holding) => holding.quantity > 0)
+    .reduce((total, holding) => {
+      const latestPrice = getLatestCryptoPriceAt(holding.accountId, holding, endDate);
+      const priceUsd = latestPrice?.priceUsd ?? holding.latestBuyPriceUsd ?? 0;
+      const fxRate = latestPrice?.fxRate ?? holding.latestBuyFxRate ?? 1;
+      return total + holding.quantity * priceUsd * fxRate;
+    }, 0);
+}
+
+function calculateMonthlyPayment(principal, annualInterestRate, repaymentMonths) {
+  const amount = Math.abs(Number(principal) || 0);
+  const months = Math.max(0, Math.floor(Number(repaymentMonths) || 0));
+  const annualRate = Math.max(0, Number(annualInterestRate) || 0);
+  if (!amount || !months) return 0;
+  const monthlyRate = annualRate / 100 / 12;
+  if (!monthlyRate) return amount / months;
+  const factor = (1 + monthlyRate) ** months;
+  return (amount * monthlyRate * factor) / (factor - 1);
+}
+
+function calculateTotalRepayment(principal, annualInterestRate, repaymentMonths) {
+  const amount = Math.abs(Number(principal) || 0);
+  const months = Math.max(0, Math.floor(Number(repaymentMonths) || 0));
+  if (!amount) return 0;
+  if (!months) return amount;
+  return calculateMonthlyPayment(amount, annualInterestRate, months) * months;
+}
+
+function getLiabilityDebtAt(account, endDate) {
+  const transactions = getTransactionsUntil(account.id, endDate);
+  const initialPrincipal = Math.abs(Number(account.initialBalance) || 0);
+  const borrowed = transactions
+    .filter((transaction) => ["income", "transfer-out"].includes(transaction.type))
+    .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
+  const paid = transactions
+    .filter((transaction) => ["expense", "transfer-in"].includes(transaction.type))
+    .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
+  const borrowedTotal = calculateTotalRepayment(initialPrincipal + borrowed, account.annualInterestRate, account.repaymentMonths);
+  return Math.max(0, borrowedTotal - paid);
+}
+
+function getLiabilityTotalAt(endDate) {
+  return data.accounts
+    .filter((account) => account.type === "liability")
+    .reduce((total, account) => total + getLiabilityDebtAt(account, endDate), 0);
+}
+
+function getTotalAssetsAt(endDate) {
+  return getCashAssetsAt(endDate) + getStockMarketValueAt(endDate) + getCryptoMarketValueAt(endDate);
 }
 
 function getRealizedStockEvents() {
@@ -203,6 +450,11 @@ function getRealizedCryptoEvents() {
         state.totalCost = state.averageCost * state.quantity;
         state.averageCost = state.quantity > 0 ? state.totalCost / state.quantity : 0;
       }
+    } else if (trade.type === "profit") {
+      events.push({
+        date: trade.date,
+        amount: priceUsd * fxRate - feeTwd
+      });
     }
 
     states.set(key, state);
@@ -222,54 +474,50 @@ export function getMonthlyCalendarSummary(state = reportState) {
       date,
       income: 0,
       expense: 0,
-      realized: 0
+      stockRealized: 0,
+      cryptoRealized: 0
     });
   }
 
-  if (["cash-flow", "income", "expense"].includes(state.calendarMode)) {
-    data.transactions.forEach((transaction) => {
-      if (!["income", "expense"].includes(transaction.type)) return;
-      const date = parseTransactionDate(transaction.date);
-      if (!inDateRange(date, start, end)) return;
-      const day = dailyMap.get(toDateInputValue(date));
-      if (!day) return;
-      day[transaction.type] += Number(transaction.amount || 0);
-    });
-  }
+  data.transactions.forEach((transaction) => {
+    if (isLiabilityTransaction(transaction)) return;
+    if (!["income", "expense"].includes(transaction.type)) return;
+    const date = parseTransactionDate(transaction.date);
+    if (!inDateRange(date, start, end)) return;
+    const day = dailyMap.get(toDateInputValue(date));
+    if (!day) return;
+    day[transaction.type] += Number(transaction.amount || 0);
+  });
 
-  const realizedEvents =
-    state.calendarMode === "stock-realized" ? getRealizedStockEvents() : state.calendarMode === "crypto-realized" ? getRealizedCryptoEvents() : [];
-  realizedEvents.forEach((event) => {
+  getRealizedStockEvents().forEach((event) => {
     const date = parseTransactionDate(event.date);
     if (!inDateRange(date, start, end)) return;
     const day = dailyMap.get(toDateInputValue(date));
     if (!day) return;
-    day.realized += Number(event.amount || 0);
+    day.stockRealized += Number(event.amount || 0);
+  });
+
+  getRealizedCryptoEvents().forEach((event) => {
+    const date = parseTransactionDate(event.date);
+    if (!inDateRange(date, start, end)) return;
+    const day = dailyMap.get(toDateInputValue(date));
+    if (!day) return;
+    day.cryptoRealized += Number(event.amount || 0);
   });
 
   const days = Array.from(dailyMap.values()).map((day) => ({
     ...day,
     net: day.income - day.expense,
-    value:
-      state.calendarMode === "income"
-        ? day.income
-        : state.calendarMode === "expense"
-          ? day.expense
-          : ["stock-realized", "crypto-realized"].includes(state.calendarMode)
-            ? day.realized
-            : day.income - day.expense
+    totalProfit: day.income - day.expense + day.stockRealized + day.cryptoRealized,
+    value: getCalendarDayValue(day, state.calendarMode)
   }));
   const totalIncome = days.reduce((total, day) => total + day.income, 0);
   const totalExpense = days.reduce((total, day) => total + day.expense, 0);
-  const totalRealized = days.reduce((total, day) => total + day.realized, 0);
-  const activeTotal =
-    state.calendarMode === "income"
-      ? totalIncome
-      : state.calendarMode === "expense"
-        ? totalExpense
-        : ["stock-realized", "crypto-realized"].includes(state.calendarMode)
-          ? totalRealized
-          : totalIncome - totalExpense;
+  const totalStockRealized = days.reduce((total, day) => total + day.stockRealized, 0);
+  const totalCryptoRealized = days.reduce((total, day) => total + day.cryptoRealized, 0);
+  const totalRealized = totalStockRealized + totalCryptoRealized;
+  const net = totalIncome - totalExpense;
+  const activeTotal = days.reduce((total, day) => total + day.value, 0);
   const activeDays = days.filter((day) => hasCalendarValue(day, state.calendarMode)).length;
 
   return {
@@ -279,12 +527,21 @@ export function getMonthlyCalendarSummary(state = reportState) {
     firstWeekday: start.getDay(),
     totalIncome,
     totalExpense,
+    totalStockRealized,
+    totalCryptoRealized,
     totalRealized,
     activeTotal,
     activeDays,
-    net: totalIncome - totalExpense,
+    net,
     mode: state.calendarMode
   };
+}
+
+function getCalendarDayValue(day, mode) {
+  if (mode === "stock-realized") return day.stockRealized;
+  if (mode === "crypto-realized") return day.cryptoRealized;
+  if (mode === "total-profit") return day.income - day.expense + day.stockRealized + day.cryptoRealized;
+  return day.income - day.expense;
 }
 
 function getChartModeLabel() {
@@ -293,20 +550,20 @@ function getChartModeLabel() {
 
 function getCalendarModeLabel(mode = reportState.calendarMode) {
   const labels = {
-    "cash-flow": "收入支出",
-    income: "收入",
-    expense: "支出",
-    "stock-realized": "股票實現損益",
-    "crypto-realized": "虛擬貨幣實現損益"
+    "daily-profit": "日常損益",
+    "stock-realized": "股票帳戶實現收益",
+    "crypto-realized": "虛擬貨幣帳戶實現收益",
+    "total-profit": "總損益"
   };
-  return labels[mode] || "收入支出";
+  return labels[mode] || "日常損益";
 }
 
 function renderViewSwitch() {
   return `
     <div class="report-view-tabs" aria-label="月報表子頁切換">
-      <button class="${reportState.view === "chart" ? "is-active" : ""}" type="button" data-report-view="chart">圓餅圖</button>
       <button class="${reportState.view === "calendar" ? "is-active" : ""}" type="button" data-report-view="calendar">月曆</button>
+      <button class="${reportState.view === "chart" ? "is-active" : ""}" type="button" data-report-view="chart">圓餅圖</button>
+      <button class="${reportState.view === "annual" ? "is-active" : ""}" type="button" data-report-view="annual">年度資產總覽</button>
     </div>
   `;
 }
@@ -354,6 +611,28 @@ function renderModeSwitch() {
       { value: "income", label: "收入", active: reportState.mode === "income" }
     ]
   });
+}
+
+function renderCalendarModeSwitch() {
+  return renderReportMenu({
+    label: getCalendarModeLabel(),
+    modeAttribute: "data-calendar-mode",
+    options: [
+      { value: "daily-profit", label: "日常損益", active: reportState.calendarMode === "daily-profit" },
+      { value: "stock-realized", label: "股票帳戶實現收益", active: reportState.calendarMode === "stock-realized" },
+      { value: "crypto-realized", label: "虛擬貨幣帳戶實現收益", active: reportState.calendarMode === "crypto-realized" },
+      { value: "total-profit", label: "總損益", active: reportState.calendarMode === "total-profit" }
+    ]
+  });
+}
+
+function renderReportTopbar() {
+  return `
+    <div class="report-topbar">
+      ${renderViewSwitch()}
+      ${reportState.view === "calendar" ? renderCalendarModeSwitch() : reportState.view === "chart" ? renderModeSwitch() : ""}
+    </div>
+  `;
 }
 
 function renderRangeControl(summary) {
@@ -473,18 +752,16 @@ function renderCalendarMonthControl(summary) {
 }
 
 function renderCalendarSummary(summary) {
-  if (summary.mode === "cash-flow") {
+  if (summary.mode === "daily-profit") {
     return `
       <div class="report-calendar-summary">
         <div class="mini-metric"><span>本月收入</span><strong class="amount-positive">${formatCurrency(summary.totalIncome)}</strong></div>
         <div class="mini-metric"><span>本月支出</span><strong class="amount-negative">${formatCurrency(summary.totalExpense)}</strong></div>
-        <div class="mini-metric"><span>本月淨額</span><strong class="${amountClass(summary.net)}">${formatCurrency(summary.net)}</strong></div>
+        <div class="mini-metric"><span>日常損益</span><strong class="${amountClass(summary.net)}">${formatCurrency(summary.net)}</strong></div>
       </div>
     `;
   }
-  const isExpense = summary.mode === "expense";
-  const isRealized = ["stock-realized", "crypto-realized"].includes(summary.mode);
-  const totalClass = isExpense ? "amount-negative" : isRealized ? amountClass(summary.activeTotal) : "amount-positive";
+  const totalClass = amountClass(summary.activeTotal);
   const average = summary.activeDays > 0 ? summary.activeTotal / summary.activeDays : 0;
   return `
     <div class="report-calendar-summary">
@@ -513,9 +790,9 @@ function renderCalendarGrid(summary) {
 
 function renderCalendarDay(day) {
   const hasRecord = hasCalendarValue(day, reportState.calendarMode);
-  const stateValue = reportState.calendarMode === "expense" ? -day.value : day.value;
+  const stateValue = day.value;
   const stateClass = hasRecord ? (stateValue >= 0 ? "is-positive" : "is-negative") : "";
-  if (reportState.calendarMode !== "cash-flow") {
+  if (reportState.calendarMode !== "daily-profit") {
     return `
       <div class="report-calendar-day ${hasRecord ? "has-record" : ""} ${stateClass}">
         <strong>${day.date.getDate()}</strong>
@@ -552,31 +829,31 @@ function renderCalendarDailyList(summary) {
 }
 
 function hasCalendarValue(day, mode) {
-  if (mode === "cash-flow") return day.income > 0 || day.expense > 0;
-  if (mode === "income") return day.income > 0;
-  if (mode === "expense") return day.expense > 0;
-  return day.realized !== 0;
+  if (mode === "daily-profit") return day.income > 0 || day.expense > 0;
+  if (mode === "stock-realized") return day.stockRealized !== 0;
+  if (mode === "crypto-realized") return day.cryptoRealized !== 0;
+  return day.totalProfit !== 0;
 }
 
 function formatCalendarValue(day, mode) {
-  if (mode === "income") return `+${formatCurrency(day.income)}`;
-  if (mode === "expense") return `-${formatCurrency(day.expense)}`;
-  const value = day.realized;
+  const value = getCalendarDayValue(day, mode);
   return `${value >= 0 ? "+" : ""}${formatCurrency(value)}`;
 }
 
 function renderCalendarListRow(day, mode) {
-  const rowValue = mode === "cash-flow" ? day.net : mode === "income" ? day.income : mode === "expense" ? -day.expense : day.realized;
-  const prefix = mode === "expense" ? "-" : rowValue >= 0 ? "+" : "-";
+  const rowValue = getCalendarDayValue(day, mode);
+  const prefix = rowValue >= 0 ? "+" : "-";
   return `
     <div class="report-calendar-list-row">
       <span>${padNumber(day.date.getMonth() + 1)}/${padNumber(day.date.getDate())}</span>
       <div>
         ${
-          mode === "cash-flow"
+          mode === "daily-profit"
             ? `<small>收入 ${formatCurrency(day.income)}</small><small>支出 ${formatCurrency(day.expense)}</small>`
+            : mode === "total-profit"
+              ? `<small>日常 ${formatCurrency(day.net)}</small><small>股票 ${formatCurrency(day.stockRealized)} · 虛擬 ${formatCurrency(day.cryptoRealized)}</small>`
             : `<small>${escapeHtml(getCalendarModeLabel(mode))}</small>`
-          }
+        }
       </div>
       <strong class="${amountClass(rowValue)}">${prefix}${formatCurrency(Math.abs(rowValue))}</strong>
     </div>
@@ -586,17 +863,6 @@ function renderCalendarListRow(day, mode) {
 function renderCalendarPage() {
   const summary = getMonthlyCalendarSummary();
   return `
-    ${renderReportMenu({
-      label: getCalendarModeLabel(),
-      modeAttribute: "data-calendar-mode",
-      options: [
-        { value: "cash-flow", label: "收入支出", active: reportState.calendarMode === "cash-flow" },
-        { value: "income", label: "收入", active: reportState.calendarMode === "income" },
-        { value: "expense", label: "支出", active: reportState.calendarMode === "expense" },
-        { value: "stock-realized", label: "股票實現損益", active: reportState.calendarMode === "stock-realized" },
-        { value: "crypto-realized", label: "虛擬貨幣實現損益", active: reportState.calendarMode === "crypto-realized" }
-      ]
-    })}
     ${renderCalendarMonthControl(summary)}
     ${renderCalendarSummary(summary)}
     ${renderCalendarGrid(summary)}
@@ -606,7 +872,6 @@ function renderCalendarPage() {
 
 function renderChartPage(summary) {
   return `
-    ${renderModeSwitch()}
     ${renderRangeControl(summary)}
     ${renderPeriodSwitch()}
     ${renderCustomRangeInputs()}
@@ -616,15 +881,350 @@ function renderChartPage(summary) {
   `;
 }
 
+function getAnnualYear() {
+  return reportState.anchorDate.getFullYear();
+}
+
+function isSalaryCategory(category) {
+  return String(category || "").trim() === "薪資";
+}
+
+function getAnnualMonthSummary(year, monthIndex) {
+  const start = new Date(year, monthIndex, 1);
+  const end = monthEnd(start);
+  const monthTransactions = data.transactions.filter((transaction) => {
+    if (isLiabilityTransaction(transaction)) return false;
+    if (!["income", "expense"].includes(transaction.type)) return false;
+    const account = data.accounts.find((item) => item.id === transaction.accountId);
+    if (!account || ["stock", "crypto", "liability"].includes(account.type)) return false;
+    const date = parseTransactionDate(transaction.date);
+    return inDateRange(date, start, end);
+  });
+
+  const totalIncome = monthTransactions
+    .filter((transaction) => transaction.type === "income")
+    .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
+  const salaryIncome = monthTransactions
+    .filter((transaction) => transaction.type === "income" && isSalaryCategory(transaction.category))
+    .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
+  const nonSalaryIncome = monthTransactions
+    .filter((transaction) => transaction.type === "income" && !isSalaryCategory(transaction.category))
+    .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
+  const totalExpense = monthTransactions
+    .filter((transaction) => transaction.type === "expense")
+    .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
+  const totalAssets = getTotalAssetsAt(end);
+  const liability = getLiabilityTotalAt(end);
+
+  return {
+    monthIndex,
+    label: `${monthIndex + 1}月`,
+    start,
+    end,
+    totalIncome,
+    salaryIncome,
+    nonSalaryIncome,
+    totalExpense,
+    net: totalIncome - totalExpense,
+    totalAssets,
+    liability,
+    netWorth: totalAssets - liability
+  };
+}
+
+export function getAnnualReportSummary(year = getAnnualYear()) {
+  const months = Array.from({ length: 12 }, (_, monthIndex) => getAnnualMonthSummary(year, monthIndex));
+  const now = new Date();
+  const activeMonthIndex = year === now.getFullYear() ? now.getMonth() : 11;
+  const activeMonth = months[Math.min(11, Math.max(0, activeMonthIndex))];
+  const totalIncome = months.reduce((total, month) => total + month.totalIncome, 0);
+  const totalExpense = months.reduce((total, month) => total + month.totalExpense, 0);
+  const salaryIncome = months.reduce((total, month) => total + month.salaryIncome, 0);
+  const nonSalaryIncome = months.reduce((total, month) => total + month.nonSalaryIncome, 0);
+  const annualNet = totalIncome - totalExpense;
+  const averageMonthlyNet = annualNet / 12;
+  const averageNonSalaryIncome = nonSalaryIncome / 12;
+  const nonSalaryRatio = totalIncome > 0 ? (nonSalaryIncome / totalIncome) * 100 : 0;
+
+  return {
+    year,
+    months,
+    activeMonth,
+    totalIncome,
+    totalExpense,
+    salaryIncome,
+    nonSalaryIncome,
+    annualNet,
+    averageMonthlyNet,
+    averageNonSalaryIncome,
+    nonSalaryRatio,
+    totalAssets: activeMonth.totalAssets,
+    liability: activeMonth.liability,
+    netWorth: activeMonth.netWorth,
+    netWorthRate: activeMonth.totalAssets > 0 ? (activeMonth.netWorth / activeMonth.totalAssets) * 100 : 0
+  };
+}
+
+function renderAnnualYearControl(summary) {
+  return `
+    <div class="annual-year-row">
+      <button class="report-arrow-button" type="button" data-annual-year-shift="-1" aria-label="上一年">‹</button>
+      <strong>${summary.year} 年度</strong>
+      <button class="report-arrow-button" type="button" data-annual-year-shift="1" aria-label="下一年">›</button>
+    </div>
+  `;
+}
+
+function renderAnnualHome(summary) {
+  return `
+    ${renderAnnualYearControl(summary)}
+    <section class="annual-hero-card">
+      <span>年度總淨資產</span>
+      <strong class="${amountClass(summary.netWorth)}">${formatCurrency(summary.netWorth)}</strong>
+      <div class="annual-hero-metrics">
+        <button type="button" data-annual-page="trends">
+          <span>年度總資產</span>
+          <strong>${formatCurrency(summary.totalAssets)}</strong>
+        </button>
+        <button type="button" data-annual-page="trends">
+          <span>目前總負債</span>
+          <strong>${formatCurrency(summary.liability)}</strong>
+        </button>
+      </div>
+      <p>淨值率 ${formatPercent(summary.netWorthRate)} · 平均每月損益 ${formatCurrency(summary.averageMonthlyNet)}</p>
+    </section>
+    <div class="annual-entry-grid">
+      <button class="annual-entry-card" type="button" data-annual-page="trends">
+        <span>趨勢圖</span>
+        <strong>看 12 個月變化</strong>
+        <small>收支、損益、資產與負債</small>
+        <span class="annual-entry-arrow" aria-hidden="true">&rsaquo;</span>
+      </button>
+      <button class="annual-entry-card" type="button" data-annual-page="income">
+        <span>收入結構</span>
+        <strong>非工資收入 ${formatPercent(summary.nonSalaryRatio)}</strong>
+        <small>月均 ${formatCurrency(summary.averageNonSalaryIncome)}</small>
+        <span class="annual-entry-arrow" aria-hidden="true">&rsaquo;</span>
+      </button>
+      <button class="annual-entry-card" type="button" data-annual-page="months">
+        <span>月份明細</span>
+        <strong>展開 12 個月</strong>
+        <small>查看完整六項指標</small>
+        <span class="annual-entry-arrow" aria-hidden="true">&rsaquo;</span>
+      </button>
+    </div>
+  `;
+}
+
+function renderAnnualPageHeader(title, summary) {
+  return `
+    <div class="annual-page-header">
+      <button class="icon-button" type="button" data-annual-page="home" aria-label="返回年度首頁"><span aria-hidden="true">‹</span></button>
+      <div>
+        <h2>${escapeHtml(title)}</h2>
+        <p>${summary.year} 年度</p>
+      </div>
+    </div>
+    ${renderAnnualYearControl(summary)}
+  `;
+}
+
+function getChartMax(months, keys) {
+  return Math.max(
+    1,
+    ...months.flatMap((month) => keys.map((key) => Math.abs(Number(month[key]) || 0)))
+  );
+}
+
+function formatCompactCurrency(value) {
+  const amount = Number(value) || 0;
+  const abs = Math.abs(amount);
+  const sign = amount < 0 ? "-" : "";
+  if (abs >= 10000) return `${sign}$${formatNumber(abs / 10000, abs >= 100000 ? 0 : 1)}萬`;
+  return `${sign}$${formatNumber(abs, 0)}`;
+}
+
+function renderCashflowBars(months) {
+  const maxValue = getChartMax(months, ["totalIncome", "totalExpense"]);
+  const maxNet = getChartMax(months, ["net"]);
+  return `
+    <div class="annual-cashflow-chart">
+      <span class="annual-zero-line" aria-hidden="true"></span>
+      ${months
+        .map((month) => {
+          const incomeHeight = month.totalIncome > 0 ? Math.max(4, (month.totalIncome / maxValue) * 100) : 0;
+          const expenseHeight = month.totalExpense > 0 ? Math.max(4, (month.totalExpense / maxValue) * 100) : 0;
+          const netOffset = Math.max(-44, Math.min(44, (month.net / maxNet) * 44));
+          const showNet = month.net !== 0;
+          return `
+            <button class="${reportState.selectedAnnualMonth === month.monthIndex ? "is-active" : ""}" type="button" data-annual-select-month="${month.monthIndex}">
+              ${
+                showNet
+                  ? `<span class="annual-net-marker ${amountClass(month.net)}" style="--net-offset:${netOffset}px"><i></i><b>${formatCompactCurrency(month.net)}</b></span>`
+                  : `<span class="annual-net-marker is-zero" style="--net-offset:0px"><i></i></span>`
+              }
+              <span class="annual-bar-pair">
+                <i class="income-bar" style="height:${incomeHeight}%">${month.totalIncome > 0 ? `<em>${formatCompactCurrency(month.totalIncome)}</em>` : ""}</i>
+                <i class="expense-bar" style="height:${expenseHeight}%">${month.totalExpense > 0 ? `<em>${formatCompactCurrency(month.totalExpense)}</em>` : ""}</i>
+              </span>
+              <small>${month.monthIndex + 1}</small>
+            </button>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderLineChart(months, primaryKey, secondaryKey) {
+  const width = 330;
+  const height = 190;
+  const padding = 30;
+  const maxValue = Math.max(1, ...months.flatMap((month) => [Number(month[primaryKey]) || 0, Number(month[secondaryKey]) || 0]));
+  const point = (month, key) => {
+    const x = padding + (month.monthIndex / 11) * (width - padding * 2);
+    const y = height - padding - ((Number(month[key]) || 0) / maxValue) * (height - padding * 2);
+    return { x, y };
+  };
+  const pointsText = (key) => months.map((month) => {
+    const { x, y } = point(month, key);
+    return `${x},${y}`;
+  }).join(" ");
+  return `
+    <svg class="annual-line-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="年度資產與負債趨勢">
+      <polyline class="asset-line" points="${pointsText(primaryKey)}"></polyline>
+      <polyline class="debt-line" points="${pointsText(secondaryKey)}"></polyline>
+      ${months
+        .map((month) => {
+          const asset = point(month, primaryKey);
+          const debt = point(month, secondaryKey);
+          const assetLabelY = Math.max(12, asset.y - 8);
+          const debtLabelY = Math.min(height - 4, debt.y + 16);
+          return `
+            <circle class="asset-point" cx="${asset.x}" cy="${asset.y}" r="3.2"></circle>
+            <text class="asset-label" x="${asset.x}" y="${assetLabelY}">${formatCompactCurrency(month[primaryKey])}</text>
+            <circle class="debt-point" cx="${debt.x}" cy="${debt.y}" r="3.2"></circle>
+            <text class="debt-label" x="${debt.x}" y="${debtLabelY}">${formatCompactCurrency(month[secondaryKey])}</text>
+          `;
+        })
+        .join("")}
+    </svg>
+  `;
+}
+
+function renderAnnualTrendPage(summary) {
+  const selectedMonth = summary.months[reportState.selectedAnnualMonth] || summary.months[0];
+  return `
+    ${renderAnnualPageHeader("趨勢圖", summary)}
+    <div class="annual-chart-mode-row">
+      <button class="${reportState.annualChartMode === "cashflow" ? "is-active" : ""}" type="button" data-annual-chart-mode="cashflow">收支與損益</button>
+      <button class="${reportState.annualChartMode === "assets" ? "is-active" : ""}" type="button" data-annual-chart-mode="assets">資產與負債</button>
+    </div>
+    <section class="panel annual-chart-panel">
+      ${
+        reportState.annualChartMode === "cashflow"
+          ? renderCashflowBars(summary.months)
+          : renderLineChart(summary.months, "totalAssets", "liability")
+      }
+      <div class="annual-selected-summary">
+        <strong>${selectedMonth.label}</strong>
+        ${
+          reportState.annualChartMode === "cashflow"
+            ? `<span>收入 ${formatCurrency(selectedMonth.totalIncome)}</span><span>支出 ${formatCurrency(selectedMonth.totalExpense)}</span><span class="${amountClass(selectedMonth.net)}">損益 ${formatCurrency(selectedMonth.net)}</span>`
+            : `<span>資產 ${formatCurrency(selectedMonth.totalAssets)}</span><span>負債 ${formatCurrency(selectedMonth.liability)}</span><span class="${amountClass(selectedMonth.netWorth)}">淨值 ${formatCurrency(selectedMonth.netWorth)}</span>`
+        }
+      </div>
+    </section>
+  `;
+}
+
+function renderAnnualIncomePage(summary) {
+  const salaryPercent = summary.totalIncome > 0 ? (summary.salaryIncome / summary.totalIncome) * 100 : 0;
+  const passivePercent = summary.totalIncome > 0 ? (summary.nonSalaryIncome / summary.totalIncome) * 100 : 0;
+  return `
+    ${renderAnnualPageHeader("收入結構", summary)}
+    <section class="panel annual-income-panel">
+      <div class="annual-income-total">
+        <span>年度總收入</span>
+        <strong>${formatCurrency(summary.totalIncome)}</strong>
+      </div>
+      <div class="annual-income-bar" aria-label="工資與非工資收入比例">
+        <span class="salary-part" style="width:${salaryPercent}%"></span>
+        <span class="passive-part" style="width:${passivePercent}%"></span>
+      </div>
+      <div class="annual-income-grid">
+        <div><span>工資收入</span><strong>${formatCurrency(summary.salaryIncome)}</strong></div>
+        <div><span>非工資收入</span><strong>${formatCurrency(summary.nonSalaryIncome)}</strong></div>
+        <div><span>非工資占比</span><strong>${formatPercent(summary.nonSalaryRatio)}</strong></div>
+        <div><span>月均非工資</span><strong>${formatCurrency(summary.averageNonSalaryIncome)}</strong></div>
+      </div>
+      <p>${summary.nonSalaryIncome > 0 ? `今年平均每月多了 ${formatCurrency(summary.averageNonSalaryIncome)} 非工資收入。` : "開始記錄非工資收入後，這裡會顯示比例。"}</p>
+    </section>
+  `;
+}
+
+function renderAnnualMonthsPage(summary) {
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth();
+  return `
+    ${renderAnnualPageHeader("月份明細", summary)}
+    <div class="annual-month-list">
+      ${summary.months
+        .map((month) => {
+          const isCurrent = summary.year === currentYear && month.monthIndex === currentMonth;
+          const isOpen = reportState.expandedAnnualMonths.includes(month.monthIndex);
+          return `
+            <article class="annual-month-card ${isCurrent ? "is-current" : ""}">
+              <button type="button" data-toggle-annual-month="${month.monthIndex}">
+                <span>${month.label}</span>
+                <strong class="${amountClass(month.net)}">${month.net >= 0 ? "留下" : "超支"} ${formatCurrency(Math.abs(month.net))}</strong>
+                <small>資產 ${formatCurrency(month.totalAssets)} · 負債 ${formatCurrency(month.liability)}</small>
+              </button>
+              ${
+                isOpen
+                  ? `
+                    <div class="annual-month-details">
+                      <div><span>非工資收入</span><strong>${formatCurrency(month.nonSalaryIncome)}</strong></div>
+                      <div><span>總收入</span><strong>${formatCurrency(month.totalIncome)}</strong></div>
+                      <div><span>總支出</span><strong>${formatCurrency(month.totalExpense)}</strong></div>
+                      <div><span>月損益</span><strong class="${amountClass(month.net)}">${formatCurrency(month.net)}</strong></div>
+                      <div><span>月總資產</span><strong>${formatCurrency(month.totalAssets)}</strong></div>
+                      <div><span>負債</span><strong>${formatCurrency(month.liability)}</strong></div>
+                    </div>
+                  `
+                  : ""
+              }
+            </article>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderAnnualReportPage() {
+  const summary = getAnnualReportSummary();
+  if (reportState.annualPage === "trends") return renderAnnualTrendPage(summary);
+  if (reportState.annualPage === "income") return renderAnnualIncomePage(summary);
+  if (reportState.annualPage === "months") return renderAnnualMonthsPage(summary);
+  return renderAnnualHome(summary);
+}
+
 export function renderMonthlyReportPage() {
   const summary = getMonthlyReportSummary();
+  const subpageHtml =
+    reportState.view === "calendar"
+      ? renderCalendarPage()
+      : reportState.view === "chart"
+        ? renderChartPage(summary)
+        : renderAnnualReportPage();
   setHtml(
     "#monthlyReportPage",
     `
       <div class="monthly-report-page">
-        ${renderViewSwitch()}
+        ${renderReportTopbar()}
         <div class="report-subpage">
-          ${reportState.view === "calendar" ? renderCalendarPage() : renderChartPage(summary)}
+          ${subpageHtml}
         </div>
       </div>
     `
@@ -632,8 +1232,8 @@ export function renderMonthlyReportPage() {
 
   bindMonthlyReportEvents();
   requestView("monthly-report", {
-    title: "月帳務報表",
-    subtitle: "收入與支出分類統計",
+    title: reportState.view === "annual" ? "年度資產總覽" : "月帳務報表",
+    subtitle: reportState.view === "annual" ? "年度財務儀表板" : "收入與支出分類統計",
     showBack: true
   });
 }
@@ -654,10 +1254,17 @@ function shiftPeriod(direction) {
   else reportState.anchorDate = addMonths(reportState.anchorDate, direction);
 }
 
+function openAnnualPage(page) {
+  if (!page) return;
+  reportState.annualPage = page;
+  renderMonthlyReportPage();
+}
+
 function bindMonthlyReportEvents() {
   document.querySelectorAll("[data-report-view]").forEach((button) => {
     button.addEventListener("click", () => {
       reportState.view = button.dataset.reportView;
+      if (reportState.view === "annual") reportState.annualPage = "home";
       renderMonthlyReportPage();
     });
   });
@@ -705,5 +1312,56 @@ function bindMonthlyReportEvents() {
   $("#reportEndDate")?.addEventListener("change", (event) => {
     reportState.customEndDate = event.target.value;
     renderMonthlyReportPage();
+  });
+
+  document.querySelectorAll("[data-annual-year-shift]").forEach((button) => {
+    button.addEventListener("click", () => {
+      reportState.anchorDate = addYears(reportState.anchorDate, Number(button.dataset.annualYearShift) || 0);
+      renderMonthlyReportPage();
+    });
+  });
+
+  document.querySelectorAll("[data-annual-page]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openAnnualPage(button.dataset.annualPage);
+    });
+  });
+
+  if (document.body.dataset.annualPageNavBound !== "true") {
+    document.body.dataset.annualPageNavBound = "true";
+    document.addEventListener("click", (event) => {
+      if (!(event.target instanceof Element)) return;
+      const target = event.target.closest("[data-annual-page]");
+      const monthlyReportPage = $("#monthlyReportPage");
+      if (!target || !monthlyReportPage?.contains(target)) return;
+      event.preventDefault();
+      openAnnualPage(target.dataset.annualPage);
+    });
+  }
+
+  document.querySelectorAll("[data-annual-chart-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      reportState.annualChartMode = button.dataset.annualChartMode;
+      renderMonthlyReportPage();
+    });
+  });
+
+  document.querySelectorAll("[data-annual-select-month]").forEach((button) => {
+    button.addEventListener("click", () => {
+      reportState.selectedAnnualMonth = Number(button.dataset.annualSelectMonth) || 0;
+      renderMonthlyReportPage();
+    });
+  });
+
+  document.querySelectorAll("[data-toggle-annual-month]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const month = Number(button.dataset.toggleAnnualMonth) || 0;
+      reportState.expandedAnnualMonths = reportState.expandedAnnualMonths.includes(month)
+        ? reportState.expandedAnnualMonths.filter((item) => item !== month)
+        : [...reportState.expandedAnnualMonths, month];
+      renderMonthlyReportPage();
+    });
   });
 }
