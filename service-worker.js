@@ -1,4 +1,6 @@
-const CACHE_NAME = "charge-app-v50";
+importScripts("./js/version.js");
+
+const CACHE_NAME = globalThis.CHARGE_APP_CACHE_NAME || "charge-app-v51";
 
 const APP_SHELL = [
   "./",
@@ -24,6 +26,7 @@ const APP_SHELL = [
   "./js/expected-income.js",
   "./js/monthly-report.js",
   "./js/settings.js",
+  "./js/version.js",
   "./js/utils.js"
 ];
 

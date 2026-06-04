@@ -1772,3 +1772,22 @@ http://127.0.0.1:8000
 - 實作紀錄：
   - `monthly-report.js` 已補上 `formatNumber` import。
   - PWA 快取版本更新為 `charge-app-v50`。
+
+### 12.47 設定頁顯示 App 版本號
+
+- 問題：目前設定頁只有「資料版本」，那是資料格式版本，無法判斷手機 PWA 是否已更新到最新程式。
+- 目標：
+  - 在設定頁新增「App 版本」顯示。
+  - 版本號要用來管理目前安裝/快取到哪一版。
+  - 盡量讓設定頁與 service worker 使用同一個版本來源，避免之後更新時漏改。
+- 實作方向：
+  - 新增 `js/version.js`，放置 `CHARGE_APP_VERSION` 與 `CHARGE_APP_CACHE_NAME`。
+  - `index.html` 在主程式前先載入 `js/version.js`。
+  - `settings.js` 從全域版本常數讀取 App 版本並顯示在資料狀態中。
+  - `service-worker.js` 使用 `importScripts("./js/version.js")` 讀取同一個快取版本。
+  - 快取版本更新為 `v51`。
+- 實作紀錄：
+  - 已新增 `js/version.js`，目前 App 版本為 `v51`。
+  - `index.html` 已在 `app.js` 前載入版本檔。
+  - 設定頁「資料狀態」已新增「App 版本」。
+  - `service-worker.js` 已改用共用版本檔產生快取名稱，並將 `js/version.js` 加入離線快取。
