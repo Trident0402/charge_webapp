@@ -10,6 +10,8 @@ import {
 } from "./storage.js";
 import { $, escapeHtml, requestHome, requestView, setHtml, showError } from "./utils.js";
 
+const APP_VERSION = globalThis.CHARGE_APP_VERSION || "unknown";
+
 export function renderSettingsPage() {
   setHtml(
     "#settingsPage",
@@ -36,6 +38,7 @@ export function renderSettingsPage() {
       <div class="section-heading"><h2>資料狀態</h2></div>
       <div class="panel">
         <div class="metric-grid">
+          <div class="metric"><span>App 版本</span><strong>${escapeHtml(APP_VERSION)}</strong></div>
           <div class="metric"><span>資料版本</span><strong>${data.version}</strong></div>
           <div class="metric"><span>貨幣</span><strong>${data.settings.currency}</strong></div>
           <div class="metric"><span>帳戶數</span><strong>${data.accounts.length}</strong></div>
