@@ -8,6 +8,7 @@ import {
   renameRecordSlot,
   switchRecordSlot
 } from "./storage.js";
+import { exportCurrentMonthPdf } from "./pdf-export.js";
 import { $, escapeHtml, requestHome, requestView, setHtml, showError } from "./utils.js";
 
 const APP_VERSION = globalThis.CHARGE_APP_VERSION || "unknown";
@@ -20,6 +21,7 @@ export function renderSettingsPage() {
         <h2 id="settingsTitle">設定與備份</h2>
         <div class="settings-actions">
           <button class="secondary-button" id="addBaseAccountsButton" type="button">新增基礎帳戶</button>
+          <button class="secondary-button" id="exportMonthlyPdfButton" type="button">匯出當月 PDF</button>
           <button class="primary-button" id="exportBackupButton" type="button">匯出 JSON 備份</button>
           <label>
             匯入目標紀錄檔
@@ -53,7 +55,7 @@ export function renderSettingsPage() {
   requestView("settings", {
     title: "設定",
     subtitle: "備份與資料管理",
-    showBack: true
+    showBack: false
   });
 }
 
@@ -111,6 +113,9 @@ function bindSettingsEvents() {
   });
 
   $("#exportBackupButton")?.addEventListener("click", exportBackup);
+  $("#exportMonthlyPdfButton")?.addEventListener("click", () => {
+    exportCurrentMonthPdf().catch(showError);
+  });
 
   document.querySelectorAll("[data-rename-record-slot]").forEach((button) => {
     button.addEventListener("click", () => {

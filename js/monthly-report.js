@@ -872,12 +872,14 @@ function renderCalendarPage() {
 
 function renderChartPage(summary) {
   return `
-    ${renderRangeControl(summary)}
-    ${renderPeriodSwitch()}
-    ${renderCustomRangeInputs()}
-    ${renderDonut(summary)}
-    ${renderLegend(summary)}
-    ${renderDetailList(summary)}
+    <div class="report-chart-page">
+      ${renderRangeControl(summary)}
+      ${renderPeriodSwitch()}
+      ${renderCustomRangeInputs()}
+      ${renderDonut(summary)}
+      ${renderLegend(summary)}
+      ${renderDetailList(summary)}
+    </div>
   `;
 }
 
@@ -1234,7 +1236,7 @@ export function renderMonthlyReportPage() {
   requestView("monthly-report", {
     title: reportState.view === "annual" ? "年度資產總覽" : "月帳務報表",
     subtitle: reportState.view === "annual" ? "年度財務儀表板" : "收入與支出分類統計",
-    showBack: true
+    showBack: false
   });
 }
 

@@ -130,6 +130,7 @@ export function createDefaultData() {
     cryptoTrades: [],
     cryptoPrices: [],
     expectedIncomes: [],
+    expectedExpenses: [],
     settings: {
       currency: "TWD",
       hideAssetAmounts: false
@@ -151,6 +152,7 @@ function normalizeData(rawData) {
     cryptoTrades: Array.isArray(rawData.cryptoTrades) ? rawData.cryptoTrades : [],
     cryptoPrices: Array.isArray(rawData.cryptoPrices) ? rawData.cryptoPrices : [],
     expectedIncomes: Array.isArray(rawData.expectedIncomes) ? rawData.expectedIncomes : [],
+    expectedExpenses: Array.isArray(rawData.expectedExpenses) ? rawData.expectedExpenses : [],
     settings: {
       ...defaults.settings,
       ...(rawData.settings || {})
@@ -227,7 +229,8 @@ export function getRecordSlotStatuses() {
       transactionCount: slotData?.transactions?.length || 0,
       stockTradeCount: slotData?.stockTrades?.length || 0,
       cryptoTradeCount: slotData?.cryptoTrades?.length || 0,
-      expectedIncomeCount: slotData?.expectedIncomes?.length || 0
+      expectedIncomeCount: slotData?.expectedIncomes?.length || 0,
+      expectedExpenseCount: slotData?.expectedExpenses?.length || 0
     };
   });
 }

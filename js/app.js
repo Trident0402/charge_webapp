@@ -7,7 +7,7 @@ import {
   renderAccountDetail,
   bindAccountForm
 } from "./accounts.js";
-import { renderExpectedIncomePage, getExpectedIncomeSummary } from "./expected-income.js";
+import { renderExpectedIncomePage, getExpectedExpenseSummary, getExpectedIncomeSummary } from "./expected-income.js";
 import { renderMonthlyReportPage } from "./monthly-report.js";
 import { renderSettingsPage } from "./settings.js";
 import { getAllCryptoMarketValue, bindCryptoForms } from "./crypto.js";
@@ -33,7 +33,7 @@ let homeMode = "assets";
 
 const ACCOUNT_OVERVIEW_TYPE = "overview";
 const ACCOUNT_TYPE_ORDER = ["bank", "linepay", "wallet", "stock", "crypto", "liability", "other"];
-const HOME_LONG_PRESS_MS = 3000;
+const HOME_MODE_DOUBLE_TAP_MS = 420;
 
 function showView(view, options = {}) {
   $$(".view").forEach((element) => element.classList.remove("is-active"));
@@ -58,7 +58,8 @@ function renderHome() {
   const liabilityTotal = getLiabilityAccountTotal();
   const liabilityAccounts = data.accounts.filter((account) => account.type === "liability");
   const liabilitySummary = getLiabilityAccountsSummary();
-  const expected = getExpectedIncomeSummary();
+  const expectedIncome = getExpectedIncomeSummary();
+  const expectedExpense = getExpectedExpenseSummary();
   const hideAmounts = Boolean(data.settings.hideAssetAmounts);
   const money = (value) => (hideAmounts ? "***" : formatCurrency(value));
   const isLiabilityMode = homeMode === "liabilities";
@@ -76,7 +77,15 @@ function renderHome() {
         { label: "現金類", value: cashTotal },
         { label: "股票市值", value: stockTotal },
         { label: "虛擬貨幣", value: cryptoTotal },
-        { label: "預期入帳總額", value: expected.total }
+        {
+          label: "預期收支",
+          html: `
+            <div class="home-expected-split">
+              <div><span>預期收入</span><strong>${money(expectedIncome.total)}</strong></div>
+              <div><span>預期支出</span><strong>${money(expectedExpense.total)}</strong></div>
+            </div>
+          `
+        }
       ];
 
   setHtml(
@@ -98,7 +107,7 @@ function renderHome() {
               (metric) => `
                 <div class="mini-metric">
                   <span>${metric.label}</span>
-                  <strong>${metric.raw ? metric.value : money(metric.value)}</strong>
+                  ${metric.html || `<strong>${metric.raw ? metric.value : money(metric.value)}</strong>`}
                 </div>
               `
             )
@@ -113,7 +122,7 @@ function renderHome() {
     saveData();
     renderHome();
   });
-  bindHomeSummaryLongPress();
+  bindHomeSummaryDoubleTap();
 
   $("#accountSectionTitle").textContent = sectionTitle;
   $("#openAccountFormButton").textContent = isLiabilityMode ? "新增負債帳戶" : "新增帳戶";
@@ -184,32 +193,23 @@ function renderAccountTypeTabs(accountTypes) {
   `;
 }
 
-function bindHomeSummaryLongPress() {
+function bindHomeSummaryDoubleTap() {
   const summaryCard = $("#homeSummary .home-summary-card");
   if (!summaryCard) return;
-  let timerId = 0;
+  let lastTapAt = 0;
 
-  const clearTimer = () => {
-    if (!timerId) return;
-    window.clearTimeout(timerId);
-    timerId = 0;
-  };
-
-  const startTimer = (event) => {
+  summaryCard.addEventListener("click", (event) => {
     if (event.target.closest("button")) return;
-    clearTimer();
-    timerId = window.setTimeout(() => {
+    const now = Date.now();
+    if (now - lastTapAt <= HOME_MODE_DOUBLE_TAP_MS) {
+      lastTapAt = 0;
       homeMode = homeMode === "assets" ? "liabilities" : "assets";
       activeAccountType = ACCOUNT_OVERVIEW_TYPE;
       renderHome();
-    }, HOME_LONG_PRESS_MS);
-  };
-
-  summaryCard.addEventListener("pointerdown", startTimer);
-  summaryCard.addEventListener("pointerup", clearTimer);
-  summaryCard.addEventListener("pointerleave", clearTimer);
-  summaryCard.addEventListener("pointercancel", clearTimer);
-  summaryCard.addEventListener("contextmenu", (event) => event.preventDefault());
+      return;
+    }
+    lastTapAt = now;
+  });
 }
 
 function renderAccountCard(account) {

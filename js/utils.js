@@ -14,7 +14,7 @@ export const ACCOUNT_ICONS = {
   wallet: "./assets/cash.png",
   stock: "./assets/stock.png",
   crypto: "./assets/Crypto.png",
-  liability: "./assets/icon.svg",
+  liability: "./assets/bank.png",
   other: "./assets/icon.svg"
 };
 
