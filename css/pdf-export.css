@@ -1,0 +1,278 @@
+#pdfExportRoot {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 794px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.pdf-page {
+  width: 794px;
+  min-height: 1123px;
+  padding: 24px 28px 20px;
+  background: #ffffff;
+  color: #17211f;
+  font-family: "HanziPen TC", "PingFang TC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  page-break-after: always;
+}
+
+.pdf-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #dbe4e1;
+}
+
+.pdf-page-header p,
+.pdf-page-header span {
+  margin: 0;
+  color: #66736f;
+  font-size: 10px;
+}
+
+.pdf-page-header h1 {
+  margin: 2px 0 0;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.pdf-page-body {
+  padding-top: 10px;
+}
+
+.pdf-page-footer {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #dbe4e1;
+  color: #66736f;
+  font-size: 9px;
+  text-align: right;
+}
+
+.pdf-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #eef5f3;
+}
+
+.pdf-hero span,
+.pdf-section h2,
+.pdf-metric span {
+  color: #66736f;
+}
+
+.pdf-hero strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.pdf-hero dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  font-size: 10px;
+}
+
+.pdf-hero div,
+.pdf-hero dt,
+.pdf-hero dd {
+  margin: 0;
+}
+
+.pdf-hero dd {
+  color: #17211f;
+  font-weight: 700;
+}
+
+.pdf-section {
+  margin-top: 10px;
+}
+
+.pdf-section h2 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.pdf-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pdf-metric {
+  min-height: 66px;
+  padding: 10px;
+  border: 1px solid #dbe4e1;
+  border-radius: 8px;
+  background: #fbfdfc;
+}
+
+.pdf-metric span {
+  display: block;
+  font-size: 10px;
+}
+
+.pdf-metric strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 17px;
+  line-height: 1.15;
+}
+
+.pdf-two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.pdf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  table-layout: fixed;
+}
+
+.pdf-table th,
+.pdf-table td {
+  padding: 7px 6px;
+  border-bottom: 1px solid #dbe4e1;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.pdf-table th {
+  color: #66736f;
+  font-weight: 700;
+  background: #eef5f3;
+}
+
+.pdf-table tfoot td {
+  font-weight: 700;
+  background: #fbfdfc;
+}
+
+.pdf-daily-table th,
+.pdf-daily-table td {
+  font-size: 9px;
+}
+
+.pdf-account-table {
+  font-size: 8px;
+}
+
+.pdf-account-table th,
+.pdf-account-table td {
+  padding: 5px 3px;
+}
+
+.pdf-account-table th:first-child,
+.pdf-account-table td:first-child {
+  width: 92px;
+}
+
+.pdf-account-table th:nth-child(2),
+.pdf-account-table td:nth-child(2) {
+  width: 56px;
+}
+
+.pdf-transaction-table th:nth-child(1),
+.pdf-transaction-table td:nth-child(1) {
+  width: 74px;
+}
+
+.pdf-transaction-table th:nth-child(6),
+.pdf-transaction-table td:nth-child(6) {
+  width: 86px;
+}
+
+.pdf-note,
+.pdf-empty {
+  margin: 0 0 6px;
+  color: #66736f;
+  font-size: 10px;
+}
+
+.pdf-expected-total {
+  margin-bottom: 4px;
+  color: #1f7667;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.pdf-tight-columns .pdf-section,
+.pdf-nested-columns .pdf-section {
+  margin-top: 0;
+}
+
+.pdf-detail-columns {
+  align-items: start;
+}
+
+.pdf-debt {
+  color: #59615f;
+}
+
+#pdfExportRoot .amount-positive {
+  color: #18875f;
+}
+
+#pdfExportRoot .amount-negative {
+  color: #c44545;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body {
+    width: auto;
+    min-height: auto;
+    background: #ffffff !important;
+  }
+
+  body > .app-shell {
+    display: none !important;
+  }
+
+  #pdfExportRoot {
+    position: static;
+    width: auto;
+    opacity: 1;
+    pointer-events: auto;
+    z-index: auto;
+  }
+
+  .pdf-page {
+    width: 100%;
+    min-height: 100vh;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .pdf-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .pdf-section,
+  .pdf-metric,
+  .pdf-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
