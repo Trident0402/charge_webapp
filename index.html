@@ -31,7 +31,7 @@
           <h2 class="sr-only" id="homeTitle">首頁</h2>
           <div id="homeSummary"></div>
           <div class="section-heading">
-            <h2>資產帳戶</h2>
+            <h2 id="accountSectionTitle">資產帳戶</h2>
             <button class="primary-button" id="openAccountFormButton" type="button">新增帳戶</button>
           </div>
           <div class="account-section" id="accountFolderList"></div>
@@ -58,13 +58,46 @@
                   <option value="wallet">錢包</option>
                   <option value="stock">股票帳戶</option>
                   <option value="crypto">虛擬貨幣帳戶</option>
+                  <option value="liability">負債帳戶</option>
                   <option value="other">其他</option>
                 </select>
               </label>
               <label id="accountInitialBalanceField">
-                初始金額
+                <span id="accountInitialBalanceLabel">初始金額</span>
                 <input id="accountInitialBalance" name="initialBalance" type="number" inputmode="decimal" step="1" value="0" required />
               </label>
+              <div class="form-stack is-hidden" id="liabilityAccountSettings">
+                <div class="form-grid">
+                  <label>
+                    年利率（%）
+                    <input id="accountAnnualInterestRate" name="annualInterestRate" type="number" inputmode="decimal" step="0.0001" value="0" />
+                  </label>
+                  <label>
+                    還款期數（月）
+                    <input id="accountRepaymentMonths" name="repaymentMonths" type="number" inputmode="numeric" step="1" min="0" value="0" />
+                  </label>
+                </div>
+                <div class="metric liability-payment-estimate">
+                  <span>估算每月還款</span>
+                  <strong id="liabilityPaymentEstimate">$0</strong>
+                </div>
+              </div>
+              <div class="form-stack is-hidden" id="bankAccountSettings">
+                <label class="checkbox-label">
+                  <input id="bankFeeEnabled" name="bankFeeEnabled" type="checkbox" />
+                  啟用轉帳手續費
+                </label>
+                <div class="form-grid">
+                  <label>
+                    轉帳手續費
+                    <input id="bankTransferFee" name="bankTransferFee" type="number" inputmode="decimal" step="1" min="0" value="0" />
+                  </label>
+                  <label>
+                    提領手續費
+                    <input id="bankWithdrawalFee" name="bankWithdrawalFee" type="number" inputmode="decimal" step="1" min="0" value="0" />
+                  </label>
+                </div>
+              </div>
               <label>
                 備註
                 <textarea id="accountNote" name="note" rows="3"></textarea>
@@ -94,6 +127,16 @@
                 金額
                 <input id="transactionAmount" name="amount" type="number" inputmode="decimal" step="1" required />
               </label>
+              <div class="form-stack is-hidden" id="transactionFeeSettings">
+                <label class="checkbox-label">
+                  <input id="includeTransferFee" name="includeTransferFee" type="checkbox" />
+                  加入轉帳手續費
+                </label>
+                <label class="is-hidden" id="transactionFeeAmountField">
+                  轉帳手續費
+                  <input id="transactionTransferFee" name="transactionTransferFee" type="number" inputmode="decimal" step="1" min="0" value="0" />
+                </label>
+              </div>
               <label>
                 日期
                 <input id="transactionDate" name="date" type="date" required />
@@ -247,6 +290,7 @@
                 <select id="cryptoTradeType" name="type" required>
                   <option value="buy">買入</option>
                   <option value="sell">賣出</option>
+                  <option value="profit">純利潤</option>
                 </select>
               </label>
               <div class="form-grid">
@@ -267,7 +311,7 @@
                   <input id="cryptoQuantity" name="quantity" type="number" inputmode="decimal" step="0.00000001" required />
                 </label>
                 <label>
-                  美元單價
+                  美元單價 / 金額
                   <input id="cryptoPriceUsd" name="priceUsd" type="number" inputmode="decimal" step="0.000001" required />
                 </label>
               </div>
