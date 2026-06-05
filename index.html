@@ -55,6 +55,7 @@
                 帳戶類型
                 <select id="accountType" name="type" required>
                   <option value="bank">銀行帳戶</option>
+                  <option value="salary">薪資帳戶</option>
                   <option value="linepay">行動支付</option>
                   <option value="wallet">錢包</option>
                   <option value="stock">股票帳戶</option>
@@ -291,7 +292,6 @@
                 <select id="cryptoTradeType" name="type" required>
                   <option value="buy">買入</option>
                   <option value="sell">賣出</option>
-                  <option value="profit">純利潤</option>
                 </select>
               </label>
               <div class="form-grid">
@@ -326,6 +326,10 @@
                   <input id="cryptoFeeUsd" name="feeUsd" type="number" inputmode="decimal" step="0.000001" value="0" />
                 </label>
               </div>
+              <label class="checkbox-line is-hidden" id="cryptoRealizedEffectField">
+                <input id="cryptoRealizedEffect" name="realizedEffect" type="checkbox" />
+                <span id="cryptoRealizedEffectLabel">列入利潤</span>
+              </label>
               <label>
                 日期
                 <input id="cryptoTradeDate" name="date" type="date" required />
