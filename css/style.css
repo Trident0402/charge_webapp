@@ -294,6 +294,20 @@ label {
   margin: 0;
 }
 
+.checkbox-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  color: var(--text);
+}
+
+.checkbox-line input[type="checkbox"] {
+  width: 18px;
+  min-height: 18px;
+  margin: 0;
+}
+
 input,
 select,
 textarea {
