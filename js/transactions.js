@@ -192,10 +192,11 @@ export function createTransfer(input) {
 }
 
 function getAutoTransferFee(fromAccount, toAccount) {
-  if (!fromAccount || fromAccount.type !== "bank" || !fromAccount.feeSettingsEnabled) {
+  const isBankLike = (account) => account?.type === "bank" || account?.type === "salary";
+  if (!isBankLike(fromAccount) || !fromAccount.feeSettingsEnabled) {
     return { amount: 0, category: "", note: "" };
   }
-  if (toAccount?.type === "bank") {
+  if (isBankLike(toAccount)) {
     return {
       amount: Number(fromAccount.bankTransferFee) || 0,
       category: "轉帳手續費",

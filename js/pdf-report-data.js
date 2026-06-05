@@ -35,6 +35,27 @@ function normalizeSecurityText(value) {
   return String(value || "").trim().toUpperCase();
 }
 
+function getCryptoTradeType(trade) {
+  return trade.type === "profit" ? "buy" : trade.type;
+}
+
+function getCryptoRealizedEffect(trade) {
+  if (trade.realizedEffect === "profit" || trade.realizedEffect === "loss") return trade.realizedEffect;
+  return trade.type === "profit" ? "profit" : "";
+}
+
+function getCryptoUnitPriceUsd(trade) {
+  const quantity = Number(trade.quantity) || 0;
+  if (trade.type === "profit") return quantity > 0 ? (Number(trade.priceUsd) || 0) / quantity : Number(trade.priceUsd) || 0;
+  return Number(trade.priceUsd) || 0;
+}
+
+function getCryptoGrossValueTwd(trade) {
+  const fxRate = Number(trade.fxRate) || 0;
+  if (trade.type === "profit") return (Number(trade.priceUsd) || 0) * fxRate;
+  return (Number(trade.quantity) || 0) * (Number(trade.priceUsd) || 0) * fxRate;
+}
+
 function securityKey(item) {
   return `${normalizeSecurityText(item.symbol)}|${normalizeSecurityText(item.name)}`;
 }
@@ -216,19 +237,14 @@ function getCryptoHoldingsAt(accountId, endDate) {
     const priceUsd = Number(trade.priceUsd) || 0;
     const fxRate = Number(trade.fxRate) || 0;
     const feeTwd = (Number(trade.feeUsd) || 0) * fxRate;
-    if (trade.type === "buy") {
-      holding.totalCost += quantity * priceUsd * fxRate + feeTwd;
+    const tradeType = getCryptoTradeType(trade);
+    if (tradeType === "buy") {
+      holding.totalCost += getCryptoGrossValueTwd(trade) + feeTwd;
       holding.quantity += quantity;
-      holding.latestBuyPriceUsd = priceUsd;
+      holding.latestBuyPriceUsd = getCryptoUnitPriceUsd(trade);
       holding.latestBuyFxRate = fxRate;
       holding.latestBuyDate = trade.date;
-    } else if (trade.type === "profit") {
-      holding.totalCost += priceUsd * fxRate;
-      holding.quantity += quantity;
-      holding.latestBuyPriceUsd = quantity > 0 ? priceUsd / quantity : priceUsd;
-      holding.latestBuyFxRate = fxRate;
-      holding.latestBuyDate = trade.date;
-    } else if (trade.type === "sell") {
+    } else if (tradeType === "sell") {
       const sellQuantity = Math.min(quantity, holding.quantity);
       holding.quantity -= sellQuantity;
       holding.totalCost = holding.averageCost * holding.quantity;
@@ -350,22 +366,27 @@ function getRealizedCryptoEvents() {
     const fxRate = Number(trade.fxRate) || 0;
     const feeTwd = (Number(trade.feeUsd) || 0) * fxRate;
 
-    if (trade.type === "buy") {
-      state.totalCost += quantity * priceUsd * fxRate + feeTwd;
+    const tradeType = getCryptoTradeType(trade);
+    const realizedEffect = getCryptoRealizedEffect(trade);
+    const grossValueTwd = getCryptoGrossValueTwd(trade);
+
+    if (tradeType === "buy") {
+      state.totalCost += grossValueTwd + feeTwd;
       state.quantity += quantity;
       state.averageCost = state.quantity > 0 ? state.totalCost / state.quantity : 0;
-    } else if (trade.type === "sell") {
+      if (realizedEffect === "profit") {
+        events.push({ date: trade.date, amount: grossValueTwd - feeTwd });
+      }
+    } else if (tradeType === "sell") {
       const sellQuantity = Math.min(quantity, state.quantity);
       if (sellQuantity > 0) {
         const costBasis = state.averageCost * sellQuantity;
         const proceeds = sellQuantity * priceUsd * fxRate - feeTwd;
-        events.push({ date: trade.date, amount: proceeds - costBasis });
+        events.push({ date: trade.date, amount: realizedEffect === "loss" ? -(grossValueTwd + feeTwd) : proceeds - costBasis });
         state.quantity -= sellQuantity;
         state.totalCost = state.averageCost * state.quantity;
         state.averageCost = state.quantity > 0 ? state.totalCost / state.quantity : 0;
       }
-    } else if (trade.type === "profit") {
-      events.push({ date: trade.date, amount: priceUsd * fxRate - feeTwd });
     }
 
     states.set(key, state);

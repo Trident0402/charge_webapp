@@ -29,6 +29,10 @@ function getAccountStartingBalance(account) {
   return Number(account.initialBalance) || 0;
 }
 
+function isBankLikeAccountType(type) {
+  return type === "bank" || type === "salary";
+}
+
 function calculateMonthlyPayment(principal, annualInterestRate, repaymentMonths) {
   const amount = Math.abs(Number(principal) || 0);
   const months = Math.max(0, Math.floor(Number(repaymentMonths) || 0));
@@ -121,13 +125,13 @@ export function getLiabilityAccountsSummary() {
 function updateAccountFormSettingsVisibility() {
   const accountType = $("#accountType")?.value || "bank";
   const isLiability = accountType === "liability";
-  const isBank = accountType === "bank";
+  const isBankLike = isBankLikeAccountType(accountType);
   const accountId = $("#accountId")?.value || "";
   $("#liabilityAccountSettings")?.classList.toggle("is-hidden", !isLiability);
-  $("#bankAccountSettings")?.classList.toggle("is-hidden", !isBank);
+  $("#bankAccountSettings")?.classList.toggle("is-hidden", !isBankLike);
   const initialBalanceLabel = $("#accountInitialBalanceLabel");
   if (initialBalanceLabel) initialBalanceLabel.textContent = isLiability ? "借款初始金額" : "初始金額";
-  const canEditInitialBalance = !accountId || isLiability || isBank;
+  const canEditInitialBalance = !accountId || isLiability || isBankLike;
   $("#accountInitialBalanceField")?.classList.toggle("is-hidden", !canEditInitialBalance);
   if ($("#accountInitialBalance")) $("#accountInitialBalance").disabled = !canEditInitialBalance;
 
@@ -144,7 +148,7 @@ function updateAccountFormSettingsVisibility() {
 export function createAccount(input) {
   const now = new Date().toISOString();
   const isLiability = input.type === "liability";
-  const isBank = input.type === "bank";
+  const isBankLike = isBankLikeAccountType(input.type);
   const account = {
     id: createId("account"),
     name: input.name,
@@ -152,9 +156,9 @@ export function createAccount(input) {
     initialBalance: isLiability ? normalizeLiabilityInitialBalance(input.initialBalance) : Number(input.initialBalance) || 0,
     annualInterestRate: isLiability ? Number(input.annualInterestRate) || 0 : 0,
     repaymentMonths: isLiability ? Math.max(0, Math.floor(Number(input.repaymentMonths) || 0)) : 0,
-    feeSettingsEnabled: isBank ? Boolean(input.feeSettingsEnabled) : false,
-    bankTransferFee: isBank ? Number(input.bankTransferFee) || 0 : 0,
-    walletWithdrawalFee: isBank ? Number(input.walletWithdrawalFee) || 0 : 0,
+    feeSettingsEnabled: isBankLike ? Boolean(input.feeSettingsEnabled) : false,
+    bankTransferFee: isBankLike ? Number(input.bankTransferFee) || 0 : 0,
+    walletWithdrawalFee: isBankLike ? Number(input.walletWithdrawalFee) || 0 : 0,
     note: input.note || "",
     createdAt: now,
     updatedAt: now
@@ -172,16 +176,16 @@ export function updateAccount(accountId, input) {
   account.type = input.type;
   if (account.type === "liability") {
     account.initialBalance = normalizeLiabilityInitialBalance(input.initialBalance);
-  } else if (account.type === "bank") {
+  } else if (isBankLikeAccountType(account.type)) {
     account.initialBalance = Number(input.initialBalance) || 0;
   } else if (wasLiability) {
     account.initialBalance = Math.abs(Number(account.initialBalance) || 0);
   }
   account.annualInterestRate = account.type === "liability" ? Number(input.annualInterestRate) || 0 : 0;
   account.repaymentMonths = account.type === "liability" ? Math.max(0, Math.floor(Number(input.repaymentMonths) || 0)) : 0;
-  account.feeSettingsEnabled = account.type === "bank" ? Boolean(input.feeSettingsEnabled) : false;
-  account.bankTransferFee = account.type === "bank" ? Number(input.bankTransferFee) || 0 : 0;
-  account.walletWithdrawalFee = account.type === "bank" ? Number(input.walletWithdrawalFee) || 0 : 0;
+  account.feeSettingsEnabled = isBankLikeAccountType(account.type) ? Boolean(input.feeSettingsEnabled) : false;
+  account.bankTransferFee = isBankLikeAccountType(account.type) ? Number(input.bankTransferFee) || 0 : 0;
+  account.walletWithdrawalFee = isBankLikeAccountType(account.type) ? Number(input.walletWithdrawalFee) || 0 : 0;
   account.note = input.note || "";
   account.updatedAt = new Date().toISOString();
   saveData();

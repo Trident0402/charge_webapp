@@ -1,5 +1,6 @@
 export const ACCOUNT_TYPES = {
   bank: "銀行帳戶",
+  salary: "薪資帳戶",
   linepay: "行動支付",
   wallet: "錢包",
   stock: "股票帳戶",
@@ -10,6 +11,7 @@ export const ACCOUNT_TYPES = {
 
 export const ACCOUNT_ICONS = {
   bank: "./assets/bank.png",
+  salary: "./assets/bank.png",
   linepay: "./assets/line.png",
   wallet: "./assets/cash.png",
   stock: "./assets/stock.png",
@@ -28,8 +30,7 @@ export const TRANSACTION_TYPES = {
 
 export const STOCK_TRADE_TYPES = {
   buy: "買入",
-  sell: "賣出",
-  profit: "純利潤"
+  sell: "賣出"
 };
 
 export function $(selector, root = document) {

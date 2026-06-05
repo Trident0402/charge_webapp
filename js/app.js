@@ -32,7 +32,7 @@ let activeAccountType = "overview";
 let homeMode = "assets";
 
 const ACCOUNT_OVERVIEW_TYPE = "overview";
-const ACCOUNT_TYPE_ORDER = ["bank", "linepay", "wallet", "stock", "crypto", "liability", "other"];
+const ACCOUNT_TYPE_ORDER = ["salary", "bank", "linepay", "wallet", "stock", "crypto", "liability", "other"];
 const HOME_MODE_DOUBLE_TAP_MS = 420;
 
 function showView(view, options = {}) {
@@ -81,8 +81,8 @@ function renderHome() {
           label: "預期收支",
           html: `
             <div class="home-expected-split">
-              <div><span>預期收入</span><strong>${money(expectedIncome.total)}</strong></div>
-              <div><span>預期支出</span><strong>${money(expectedExpense.total)}</strong></div>
+              <div><span>預期收入</span><strong>${money(expectedIncome.pending)}</strong></div>
+              <div><span>預期支出</span><strong>${money(expectedExpense.pending)}</strong></div>
             </div>
           `
         }
